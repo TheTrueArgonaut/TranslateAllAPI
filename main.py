@@ -22,6 +22,10 @@ from collections import defaultdict
 if not os.getenv('AWS_REGION'):
     os.environ['AWS_REGION'] = 'us-east-1'
 
+# Set DeepL API key if not provided
+if not os.getenv('DEEPL_API_KEY'):
+    os.environ['DEEPL_API_KEY'] = '74732027-e377-4323-8a86-2744ab7ae7ca'
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret')
 CORS(app)
