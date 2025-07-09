@@ -76,7 +76,7 @@ export STRIPE_PUBLISHABLE_KEY="your_stripe_publishable_key"
 python main.py
 ```
 
-The API will be available at `http://localhost:8080`
+The API will be available at (https://www.argonautdigitalventures.com/demo)
 
 ## API Endpoints
 
