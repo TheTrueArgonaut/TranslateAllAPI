@@ -940,5 +940,27 @@ def stripe_webhook():
     
     return '', 200
 
+@app.route('/demo-translate', methods=['POST'])
+def demo_translate():
+    """Demo translation endpoint that doesn't require API key"""
+    body = request.get_json()
+    text = (body or {}).get('text', '').strip()
+    target_lang = body.get('target', 'ES')
+    
+    if not text:
+        return jsonify(success=False, error='No text provided')
+    
+    # Check if DeepL API key is configured
+    if not DEEPL_API_KEY:
+        return jsonify(success=False, error='Translation service not configured')
+    
+    # Use smart cache orchestrator (no API key needed for demo)
+    try:
+        result = cache_orchestrator.handle_translation_request(text, target_lang, 'demo')
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify(success=False, error=f'Translation error: {str(e)}'), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)), debug=True)
