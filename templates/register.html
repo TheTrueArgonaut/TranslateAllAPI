@@ -1,19 +1,130 @@
-{% extends "base.html" %}
-{% block title %}Register — Argonaut Digital Ventures{% endblock %}
-{% block content %}
-<div class="container" style="max-width:400px;margin:2rem auto;">
-  <h2>Create an Account</h2>
-  <form method="post" action="/register">
-    <div style="margin-bottom:1rem;">
-        <label for="email">Email</label><br>
-        <input type="email" id="email" name="email" required style="width:100%;padding:8px;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Create Account — Argonaut Digital Ventures</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+          rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#dc2626",
+                        secondary: "#1a1a1a",
+                    },
+                    borderRadius: {
+                        none: "0px",
+                        sm: "4px",
+                        DEFAULT: "8px",
+                        md: "12px",
+                        lg: "16px",
+                        xl: "20px",
+                        "2xl": "24px",
+                        "3xl": "32px",
+                        full: "9999px",
+                        button: "8px",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+    </style>
+</head>
+<body class="bg-[#0a0a0a] text-white">
+<header class="sticky top-0 z-50 bg-[#0a0a0a] border-b border-gray-800">
+    <div class="w-full px-6 py-4">
+        <div class="flex items-center justify-between">
+            <a href="/">
+                <div class="flex items-center">
+                    <h1 class="text-2xl ['Poppins','Helvetica','Arial',sans-serif] text-primary">
+                        Argonaut DV
+                    </h1>
+                </div>
+            </a>
+            <div class="flex items-center space-x-4">
+                <a href="/login" class="hidden md:block">
+                    <button class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
+                        Login
+                    </button>
+                </a>
+            </div>
+        </div>
     </div>
-    <div style="margin-bottom:1rem;">
-      <label for="password">Password</label><br>
-      <input type="password" id="password" name="password" required style="width:100%;padding:8px;">
-    </div>
-    <button type="submit" class="btn btn-primary">Sign Up</button>
-  </form>
-  <p style="margin-top:1rem;">Already have an account? <a href="/login">Log in</a></p>
-</div>
-{% endblock %}
+</header>
+
+    <section class="min-h-screen flex items-center justify-center py-20">
+        <div class="w-full max-w-md mx-auto px-6">
+            <div class="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-white mb-2">Create Account</h2>
+                    <p class="text-gray-400">Join Argonaut Digital Ventures</p>
+                </div>
+
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                {% for message in messages %}
+                <div class="bg-red-100/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-4">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="/register">
+                    <div class="mb-6">
+                        <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email
+                            Address</label>
+                        <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                required
+                                class="w-full px-4 py-3 bg-[#111111] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                placeholder="Enter your email"
+                        >
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                        <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                required
+                                class="w-full px-4 py-3 bg-[#111111] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                placeholder="Create a password"
+                        >
+                    </div>
+
+                    <button
+                            type="submit"
+                            class="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-secondary transition-colors font-medium"
+                    >
+                        Create Account
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-gray-400">
+                        Already have an account?
+                        <a href="/login"
+                           class="text-primary hover:text-primary/80 transition-colors">
+                            Sign in
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
