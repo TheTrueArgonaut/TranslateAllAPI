@@ -143,7 +143,8 @@
               </p>
             </div>
 
-              <form method="POST" action="/login" class="space-y-4" id="loginFormElement">
+              <form method="POST" action="{{ url_for('login') }}" class="space-y-4"
+                    id="loginFormElement">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
                   >Email Address</label
@@ -217,11 +218,12 @@
               <button
                 type="submit"
                 class="w-full bg-primary hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors !rounded-button whitespace-nowrap"
+                onclick="console.log('Login button clicked'); return true;"
               >
                 Sign In
               </button>
                   <div class="text-center mt-4">
-                      <a href="/forgot-password"
+                      <a href="{{ url_for('forgot_password') }}"
                          class="text-primary hover:text-red-400 text-sm transition-colors">
                           Forgot your password?
                       </a>
@@ -268,7 +270,8 @@
               {% endfor %}
               {% endif %}
               {% endwith %}
-              <form method="POST" action="/register" class="space-y-4" id="registrationFormElement">
+              <form method="POST" action="{{ url_for('register') }}" class="space-y-4"
+                    id="registrationFormElement">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
                 >Full Name</label
@@ -393,13 +396,13 @@
                   <p class="text-sm text-gray-300">
                     I agree to the
                     <a
-                            href="/terms"
+                            href="{{ url_for('terms') }}"
                       class="text-primary hover:text-red-400 transition-colors"
                       >Terms of Service</a
                     >
                     and
                     <a
-                            href="/privacy"
+                            href="{{ url_for('privacy') }}"
                       class="text-primary hover:text-red-400 transition-colors"
                       >Privacy Policy</a
                     >
@@ -410,7 +413,7 @@
               <button
                 type="submit"
                 class="w-full bg-primary hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors !rounded-button whitespace-nowrap"
-                onclick="return validateAndSubmitRegistration(this.form)"
+                onclick="console.log('Register button clicked'); return true;"
               >
                 Create Account
               </button>
@@ -507,8 +510,20 @@
         const registerForm = document.querySelector('#registrationFormElement');
         if (registerForm) {
           registerForm.addEventListener('submit', function(event) {
-            if (!validateAndSubmitRegistration(this)) {
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+
+            if (password !== confirmPassword) {
+              alert('Passwords do not match. Please try again.');
               event.preventDefault();
+              return false;
+            }
+
+            if (!agreeTerms) {
+              alert('You must agree to the Terms of Service and Privacy Policy to continue.');
+              event.preventDefault();
+              return false;
             }
           });
         }
