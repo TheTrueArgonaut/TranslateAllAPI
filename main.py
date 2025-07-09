@@ -584,6 +584,26 @@ def profile():
         flash('Please log in to access your profile.', 'warning')
         return redirect(url_for('login'))
     
+    # For now, since there are no active subscriptions, always show inactive status
+    # This will be updated when Stripe webhook creates subscriptions
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    
+    # Check if user has any active subscriptions
+    c.execute('SELECT COUNT(*) FROM subscriptions WHERE user_id = ? AND status = "active"', (user_id,))
+    active_subscriptions = c.fetchone()[0]
+    
+    conn.close()
+    
+    # If no active subscription, show the "need to subscribe" message
+    if active_subscriptions == 0:
+        return render_template('profile.html', 
+                             current_user={'username': user_email}, 
+                             key=None,
+                             subscription_status='inactive')
+    
+    # If they have active subscription, generate API key
+    # (This code will run after they complete Stripe checkout)
     key = session.get('api_key')
     if not key:
         key = uuid.uuid4().hex
@@ -595,12 +615,17 @@ def profile():
         conn.close()
         session['api_key'] = key
     
+    # Get API key usage info
     conn = sqlite3.connect('api_keys.db')
     c = conn.cursor()
-    c.execute('SELECT created, uses FROM api_keys WHERE key = ?', (session['api_key'],))
+    c.execute('SELECT created, uses FROM api_keys WHERE key = ?', (key,))
     row = c.fetchone()
     conn.close()
-    return render_template('profile.html', current_user={'username': user_email}, key=row and (session['api_key'], row[0], row[1]))
+    
+    return render_template('profile.html', 
+                         current_user={'username': user_email}, 
+                         key=row and (key, row[0], row[1]),
+                         subscription_status='active')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

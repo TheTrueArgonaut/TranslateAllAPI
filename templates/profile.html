@@ -3,13 +3,30 @@
 {% block content %}
 <div class="container" style="max-width:500px;margin:2rem auto;">
   <h2>Welcome, {{ current_user.username }}</h2>
-  {% if key %}
-    <p><strong>Your API key:</strong></p>
-    <input type="text" readonly value="{{ key[0] }}" style="width:100%;padding:8px;margin-bottom:1rem;">
-    <p>Created: {{ key[1] }} | Uses: {{ key[2] }}</p>
+
+    {% if subscription_status == 'active' and key %}
+    <div style="background:#d4edda;border:1px solid #c3e6cb;padding:1rem;border-radius:4px;margin-bottom:1rem;">
+        <h3 style="color:#155724;margin-top:0;"> Active Subscription</h3>
+        <p><strong>Your API Key:</strong></p>
+        <input type="text" readonly value="{{ key[0] }}"
+               style="width:100%;padding:8px;margin-bottom:1rem;font-family:monospace;">
+        <p><small>Created: {{ key[1] }} | Uses: {{ key[2] }}/2000</small></p>
+    </div>
+    {% elif subscription_status == 'inactive' %}
+    <div style="background:#f8d7da;border:1px solid #f5c6cb;padding:1rem;border-radius:4px;margin-bottom:1rem;">
+        <h3 style="color:#721c24;margin-top:0;"> No Active Subscription</h3>
+        <p>You need an active subscription to get an API key and access the translation service.</p>
+        <p><a href="/demo"
+              style="background:#007bff;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;">Subscribe
+            Now</a></p>
+    </div>
   {% else %}
-    <p>You haven’t subscribed yet. <a href="/demo">Try the demo & subscribe</a>.</p>
+    <div style="background:#fff3cd;border:1px solid #ffeaa7;padding:1rem;border-radius:4px;margin-bottom:1rem;">
+        <h3 style="color:#856404;margin-top:0;"> Setting up your API key...</h3>
+        <p>Please refresh the page in a moment.</p>
+    </div>
   {% endif %}
-  <p style="margin-top:1rem;"><a href="/logout">Log out</a></p>
+
+    <p style="margin-top:1rem;"><a href="/logout">Log out</a></p>
 </div>
 {% endblock %}
