@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Home — Argonaut Digital Ventures{% endblock %}
+
+{% block content %}
+  <!-- Hero -->
+  <div class="text-center py-5">
+    <h1 class="display-4">Lightning-Fast Translation API</h1>
+    <p class="lead text-muted">Enterprise-grade accuracy at only $0.10 per call.</p>
+    <a href="{{ url_for('demo') }}" class="btn btn-primary btn-lg mt-3">
+      Try the Live Demo
+    </a>
+  </div>
+
+  <!-- Features -->
+  <div class="row text-center gy-4 my-5">
+    <div class="col-md-4">
+      <i class="fas fa-bolt feature-icon"></i>
+      <h5 class="mt-3">Ultra-Fast</h5>
+      <p>Cached results in &lt;10ms on repeat phrases.</p>
+    </div>
+    <div class="col-md-4">
+      <i class="fas fa-dollar-sign feature-icon"></i>
+      <h5 class="mt-3">Transparent Pricing</h5>
+      <p>Just $0.10 per translation—no hidden fees.</p>
+    </div>
+    <div class="col-md-4">
+      <i class="fas fa-globe feature-icon"></i>
+      <h5 class="mt-3">Global Languages</h5>
+      <p>30+ languages, from Spanish to Japanese.</p>
+    </div>
+  </div>
+
+  <!-- Pricing highlight -->
+  <div class="bg-primary text-white text-center p-5 rounded">
+    <h2>Simple Subscription</h2>
+    <p class="mb-4">$9.99/month for unlimited translations</p>
+    <a href="{{ url_for('demo') }}" class="btn btn-light btn-lg">Subscribe Now</a>
+  </div>
+{% endblock %}

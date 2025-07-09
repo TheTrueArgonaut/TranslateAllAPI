@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Your Profile — Argonaut Digital Ventures{% endblock %}
+{% block content %}
+<div class="container" style="max-width:500px;margin:2rem auto;">
+  <h2>Welcome, {{ current_user.username }}</h2>
+  {% if key %}
+    <p><strong>Your API key:</strong></p>
+    <input type="text" readonly value="{{ key[0] }}" style="width:100%;padding:8px;margin-bottom:1rem;">
+    <p>Created: {{ key[1] }} | Uses: {{ key[2] }}</p>
+  {% else %}
+    <p>You haven’t subscribed yet. <a href="/demo">Try the demo & subscribe</a>.</p>
+  {% endif %}
+  <p style="margin-top:1rem;"><a href="/logout">Log out</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Live Demo — Argonaut Digital Ventures{% endblock %}
+
+{% block content %}
+<div class="demo">
+    <h2>Live Demo</h2>
+    <!-- Hidden API key storage -->
+    <input id="apiKey" type="hidden"/>
+    <p id="apiKeyStatus" style="margin:10px 0; color: #555;">Generating API key…</p>
+    <textarea id="text" rows="4" placeholder="Enter text here"></textarea>
+    <select id="lang">
+        <option value="ES">Spanish</option>
+        <option value="FR">French</option>
+        <option value="DE">German</option>
+        <option value="IT">Italian</option>
+        <option value="PT">Portuguese</option>
+        <option value="ZH">Chinese</option>
+        <option value="JA">Japanese</option>
+    </select>
+    <button id="translateBtn" class="translate-btn">Translate Now</button>
+    <div id="result"></div>
+</div>
+
+<!-- Stripe Subscribe button -->
+<p class="text-center mt-4">
+    <button id="checkout-button" class="btn btn-primary">Subscribe for $9.99/mo</button>
+</p>
+
+<script>
+    // Base URL for API endpoints
+    const API_BASE = "{{ api_base_url }}";
+
+    // Auto-create API key on page load
+    async function autoCreateKey() {
+      try {
+        const resp = await fetch(API_BASE + '/create-key', { method: 'POST' });
+        const json = await resp.json();
+        if (json.apiKey) {
+          document.getElementById('apiKey').value = json.apiKey;
+          document.getElementById('apiKeyStatus').textContent = 'API key generated';
+        }
+      } catch (e) {
+        console.error('Failed to auto-create API key', e);
+      }
+    }
+    // Translation function
+    async function translate() {
+      const text = document.getElementById('text').value.trim();
+      const lang = document.getElementById('lang').value;
+      const out = document.getElementById('result');
+      if (!text) {
+        out.innerHTML = '<div style="color:red;">Please enter some text.</div>';
+        return;
+      }
+      out.innerHTML = 'Translating…';
+      try {
+        const res = await fetch(API_BASE + '/translate', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'X-API-KEY': document.getElementById('apiKey').value },
+          body: JSON.stringify({ text, target: lang })
+        });
+        const data = await res.json();
+        if (data.success) {
+          out.innerHTML = `<div class="result"><strong>Translation:</strong> ${data.translation}</div>`;
+        } else {
+          out.innerHTML = `<div style="color:red;">Error: ${data.error}</div>`;
+        }
+      } catch (e) {
+        out.innerHTML = `<div style="color:red;">Network error: ${e.message}</div>`;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      autoCreateKey();
+      document.getElementById('translateBtn').addEventListener('click', translate);
+    });
+
+</script>
+
+  <!-- Stripe.js -->
+  <script src="https://js.stripe.com/v3"></script>
+  <script>
+      const stripe = Stripe('{{ stripe_publishable_key }}');
+      document.getElementById('checkout-button').addEventListener('click', async () => {
+        try {
+          const resp = await fetch(API_BASE + '/create-checkout-session', { method: 'POST' });
+          if (resp.status === 401) {
+            // not logged in, redirect user to login
+            window.location.href = '/login';
+            return;
+          }
+          const data = await resp.json();
+          if (data.error) {
+            console.error('Checkout session error:', data.error);
+            return;
+          }
+          await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        } catch (err) {
+          console.error('Network or server error:', err);
+        }
+      });
+  </script>
+{% endblock %}
