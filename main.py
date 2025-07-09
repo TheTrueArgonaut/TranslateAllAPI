@@ -544,18 +544,27 @@ def home():
 def demo():
     api_base = request.host_url.rstrip('/')
     return render_template(
-        'demo.html',
+        'live-demo.html',
+        stripe_publishable_key=stripe_publishable_key,
+        api_base_url=api_base
+    )
+
+@app.route('/live-demo')
+def live_demo():
+    api_base = request.host_url.rstrip('/')
+    return render_template(
+        'live-demo.html',
         stripe_publishable_key=stripe_publishable_key,
         api_base_url=api_base
     )
 
 @app.route('/terms')
 def terms():
-    return render_template('terms.html')
+    return render_template('terms-and-condition.html')
 
 @app.route('/privacy')
 def privacy():
-    return render_template('privacy.html')
+    return render_template('privacy-policy.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

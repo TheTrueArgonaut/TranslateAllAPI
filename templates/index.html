@@ -1,39 +1,511 @@
-{% extends "base.html" %}
-{% block title %}Home — Argonaut Digital Ventures{% endblock %}
-
-{% block content %}
-  <!-- Hero -->
-  <div class="text-center py-5">
-    <h1 class="display-4">Lightning-Fast Translation API</h1>
-    <p class="lead text-muted">Enterprise-grade accuracy at only $0.10 per call.</p>
-    <a href="{{ url_for('demo') }}" class="btn btn-primary btn-lg mt-3">
-      Try the Live Demo
-    </a>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KRATOS - Secure Your Digital Life with AI-Powered Protection</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#dc2626",
+              secondary: "#1a1a1a",
+            },
+            borderRadius: {
+              none: "0px",
+              sm: "4px",
+              DEFAULT: "8px",
+              md: "12px",
+              lg: "16px",
+              xl: "20px",
+              "2xl": "24px",
+              "3xl": "32px",
+              full: "9999px",
+              button: "8px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :where([class^="ri-"])::before {
+      content: "\f3c2";
+      }
+    </style>
+  </head>
+  <body>
+    <header class="sticky top-0 z-50 bg-[#0a0a0a] border-b border-gray-800">
+      <div class="w-full px-6 py-4">
+          <div class="flex items-center justify-between">
+              <a href="/">
+                  <div class="flex items-center">
+                      <h1 class="text-2xl ['Poppins','Helvetica','Arial',sans-serif] text-primary">
+                        Argonaut DV
+                      </h1>
+                  </div>
+              </a>
+              <nav class="hidden md:flex items-center space-x-8">
+                  <a href="/#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
+                  <a href="/privacy" class="text-gray-300 hover:text-primary transition-colors">Privacy
+                      Policy</a>
+                  <a href="/terms"
+                      class="text-gray-300 hover:text-primary transition-colors">Terms &
+                      Conditions</a>
+              </nav>
+              <div class="flex items-center space-x-4">
+                  <a href="/login" class="hidden md:block">
+                      <button
+                          class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
+                          Login
+                      </button>
+                  </a>
+                  <a href="/profile"
+                      class="hidden md:flex items-center justify-center w-10 h-10 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
+                      <i class="ri-user-3-line text-xl"></i>
+                  </a>
+                  
+                  <button id="mobile-menu-button"
+                      class="md:hidden w-10 h-10 flex items-center justify-center text-gray-300">
+                      <i class="ri-menu-line text-2xl"></i>
+                  </button>
+              </div>
+          </div>
+      </div>
+  </header>
+  <div id="mobile-menu" class="hidden fixed inset-0 z-40">
+      <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+      <div
+          class="fixed right-0 top-0 w-64 h-full bg-[#0a0a0a] border-l border-gray-800 p-6 transform transition-transform duration-300 translate-x-full">
+          <div class="flex justify-end mb-8">
+              <button id="close-mobile-menu" class="w-10 h-10 flex items-center justify-center text-gray-300">
+                  <i class="ri-close-line text-2xl"></i>
+              </button>
+          </div>
+          <div class="flex flex-col space-y-6">
+              <a href="/#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
+              <a href="/privacy" class="text-gray-300 hover:text-primary transition-colors">Privacy
+                  Policy</a>
+              <a href="/terms" class="text-gray-300 hover:text-primary transition-colors">Terms &
+                  Conditions</a>
+              <a href="/login">
+                  <button
+                      class="w-full bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
+                      Login
+                  </button>
+              </a>
+              <a href="/profile"
+                  class="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors">
+                  <i class="ri-user-3-line"></i>
+                  <span>Profile</span>
+              </a>
+          </div>
+      </div>
   </div>
+    <section
+      class="relative min-h-[50vh] flex items-center justify-center overflow-hidden"
+      style="background-image: url('https://readdy.ai/api/search-image?query=Dark%20mysterious%20cybersecurity%20interface%20with%20deep%20black%20and%20obsidian%20tones%2C%20red%20glowing%20accents%2C%20abstract%20digital%20patterns%2C%20futuristic%20technology%20visualization%2C%20dramatic%20lighting%20effects%2C%20enigmatic%20atmosphere%20with%20subtle%20blue%20undertones%2C%20perfect%20for%20mysterious%20tech%20branding%2C%20high%20contrast%20modern%20design&width=1920&height=1080&seq=hero-bg&orientation=landscape'); background-size: cover; background-position: center;"
+    >
+      <div
+        class="absolute inset-0 bg-gradient-to-r from-black/90 to-transparent"
+      ></div>
+      <div class="relative w-full px-6 py-12">
+        <div class="max-w-7xl mx-auto">
+          <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div class="text-white">
+              <h1 class="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                Secure Your Digital Life with
+                <span class="text-blue-300">KRATOS</span>
+              </h1>
+              <p class="text-xl mb-8 text-blue-100 leading-relaxed">
+                AI-powered app protection with advanced biometric
+                authentication, behavioral monitoring, and multilingual support.
+                Your ultimate digital security companion.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-4">
+                  <a href="/live-demo">
+                  <button
+                  class="bg-primary text-white px-8 py-4 !rounded-button hover:bg-secondary transition-colors text-lg font-semibold whitespace-nowrap"
+                >
+                  Try Live Demo
+                </button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-20 bg-[#0a0a0a]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl font-bold text-gray-100 mb-4">
+            Lightning-Fast Translation API
+          </h2>
+          <p class="text-xl text-gray-400">
+            Enterprise-grade accuracy at only $0.10 per call.
+          </p>
+        </div>
+        <div class="flex justify-between items-start gap-4 mb-16">
+          <div class="w-[32%] text-center">
+            <div
+              class="w-16 h-16 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-flashlight-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-100 mb-2">Ultra-Fast</h3>
+            <p class="text-gray-400">
+              Cached results in &lt;10ms on repeat phrases.
+            </p>
+          </div>
+          <div class="w-[32%] text-center">
+            <div
+              class="w-16 h-16 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-money-dollar-circle-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-100 mb-2">
+              Transparent Pricing
+            </h3>
+            <p class="text-gray-400">
+              Just $0.10 per translation—no hidden fees.
+            </p>
+          </div>
+          <div class="w-[32%] text-center">
+            <div
+              class="w-16 h-16 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-global-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-100 mb-2">
+              Global Languages
+            </h3>
+            <p class="text-gray-400">
+              30+ languages, from Spanish to Japanese.
+            </p>
+          </div>
+        </div>
+        <div class="w-full bg-primary/10 rounded-2xl p-12 text-center">
+          <h3 class="text-3xl font-bold text-gray-100 mb-4">
+            Simple Subscription
+          </h3>
+          <p class="text-xl text-gray-400 mb-6">
+            $9.99/month for unlimited translations
+          </p>
+          <button
+            class="bg-primary text-white px-8 py-3 !rounded-button hover:bg-secondary transition-colors font-semibold whitespace-nowrap"
+          >
+            Subscribe Now
+          </button>
+        </div>
+      </div>
+    </section>
+    <section id="features" class="py-20 bg-[#111111]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl font-bold text-gray-100 mb-4">
+            Core Security Features
+          </h2>
+          <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+            Advanced protection powered by AI technology to keep your apps and
+            data secure
+          </p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div
+            class="bg-[#1a1a1a] p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow border border-gray-800"
+          >
+            <div
+              class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-lock-2-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-100 mb-4">
+              App Protection
+            </h3>
+            <p class="text-gray-400 leading-relaxed">
+              Lock any app with password or biometric authentication.
+              System-level protection prevents unauthorized installation and
+              sideloading.
+            </p>
+          </div>
+          <div
+            class="bg-[#1a1a1a] p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow border border-gray-800"
+          >
+            <div
+              class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-shield-check-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-100 mb-4">AI Security</h3>
+            <p class="text-gray-400 leading-relaxed">
+              Behavioral AI monitors usage patterns and detects suspicious
+              activity with real-time threat detection and emergency override
+              systems.
+            </p>
+          </div>
+          <div
+            class="bg-[#1a1a1a] p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow border border-gray-800"
+          >
+            <div
+              class="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6"
+            >
+              <i class="ri-fingerprint-line text-2xl text-primary"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-100 mb-4">
+              Biometric Auth
+            </h3>
+            <p class="text-gray-400 leading-relaxed">
+              Fingerprint, face, and iris unlock support with panic codes and
+              emergency access controls for maximum security.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-20 bg-[#0a0a0a]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <img
 
-  <!-- Features -->
-  <div class="row text-center gy-4 my-5">
-    <div class="col-md-4">
-      <i class="fas fa-bolt feature-icon"></i>
-      <h5 class="mt-3">Ultra-Fast</h5>
-      <p>Cached results in &lt;10ms on repeat phrases.</p>
-    </div>
-    <div class="col-md-4">
-      <i class="fas fa-dollar-sign feature-icon"></i>
-      <h5 class="mt-3">Transparent Pricing</h5>
-      <p>Just $0.10 per translation—no hidden fees.</p>
-    </div>
-    <div class="col-md-4">
-      <i class="fas fa-globe feature-icon"></i>
-      <h5 class="mt-3">Global Languages</h5>
-      <p>30+ languages, from Spanish to Japanese.</p>
-    </div>
-  </div>
-
-  <!-- Pricing highlight -->
-  <div class="bg-primary text-white text-center p-5 rounded">
-    <h2>Simple Subscription</h2>
-    <p class="mb-4">$9.99/month for unlimited translations</p>
-    <a href="{{ url_for('demo') }}" class="btn btn-light btn-lg">Subscribe Now</a>
-  </div>
-{% endblock %}
+              src="./img/screenfinalbeginfun.png"
+              alt="KRATOS AI Assistant"
+              class="w-70 h-auto rounded-2xl shadow-lg object-cover"
+            />
+          </div>
+          <div>
+            <h2 class="text-4xl font-bold text-gray-100 mb-6">
+              Multilingual AI Assistant
+            </h2>
+            <p class="text-xl text-gray-400 mb-8">
+              KRATOS AI Assistant provides conversational security management
+              with natural language processing and real-time translation
+              capabilities.
+            </p>
+            <div class="space-y-6">
+              <div class="flex items-start space-x-4">
+                <div
+                  class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="ri-global-line text-primary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-100 mb-2">
+                    30+ Languages Support
+                  </h4>
+                  <p class="text-gray-400">
+                    Complete onboarding and interaction in your preferred
+                    language
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start space-x-4">
+                <div
+                  class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="ri-translate-2-line text-primary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-100 mb-2">
+                    Real-time Translation
+                  </h4>
+                  <p class="text-gray-400">
+                    Automatic language detection with instant translation
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start space-x-4">
+                <div
+                  class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="ri-chat-3-line text-primary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-100 mb-2">
+                    Smart Responses
+                  </h4>
+                  <p class="text-gray-400">
+                    Context-aware quick replies with voice-like typing animation
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-20 bg-[#111111]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <img
+                    src="/static/img/founder.jpg"
+              alt="Sakelarios All - CEO"
+              class="w-full h-auto rounded-2xl shadow-lg object-cover"
+            />
+          </div>
+          <div class="text-left">
+            <h2 class="text-4xl font-bold text-gray-100 mb-6">
+              A Message from Our CEO
+            </h2>
+            <div class="flex items-center mb-6">
+              <h3 class="text-xl font-semibold text-gray-100">
+                Sakelarios All
+              </h3>
+              <span class="mx-2 text-gray-400">|</span>
+              <p class="text-gray-400">CEO, Argonaut Digital Ventures LLC</p>
+            </div>
+            <div class="space-y-4">
+              <p class="text-lg text-gray-400 leading-relaxed">
+                "As a father and CEO of Argonaut Digital Ventures LLC, I
+                understand firsthand the challenges of keeping our digital lives
+                secure. My journey to create KratosLockit began with a simple
+                frustration - existing parental control apps weren't strong
+                enough to outsmart tech-savvy kids."
+              </p>
+              <p class="text-lg text-gray-400 leading-relaxed">
+                "I'm not a tech giant—just a parent who learned enough to build
+                a platform with app locking, AI-driven security, and
+                multilingual support. Our mission is to provide families with
+                the tools they need to stay safe and productive online."
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class="bg-black text-white py-8">
+      <div class="max-w-7xl mx-auto px-6">
+        <div
+          class="flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <p class="text-gray-400 text-sm">
+            © 2025 KRATOS Security. All rights reserved.
+          </p>
+          <a
+            href="mailto:SakelariosAll@ArgonautDigitalVentures.com"
+            class="text-primary hover:text-blue-300 transition-colors"
+          >
+            SakelariosAll@ArgonautDigitalVentures.com
+          </a>
+        </div>
+      </div>
+    </footer>
+    <script id="smooth-scroll">
+      document.addEventListener("DOMContentLoaded", function () {
+        const links = document.querySelectorAll('a[href^="#"]');
+        links.forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute("href");
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+              targetElement.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }
+          });
+        });
+      });
+    </script>
+    <script id="header-scroll">
+      document.addEventListener("DOMContentLoaded", function () {
+        const header = document.querySelector("header");
+        let lastScrollY = window.scrollY;
+        window.addEventListener("scroll", function () {
+          if (window.scrollY > 100) {
+            header.classList.add("shadow-lg");
+          } else {
+            header.classList.remove("shadow-lg");
+          }
+        });
+      });
+    </script>
+    <script id="cta-interactions">
+      document.addEventListener("DOMContentLoaded", function () {
+        const ctaButtons = document.querySelectorAll("button");
+        ctaButtons.forEach((button) => {
+          button.addEventListener("mouseenter", function () {
+            this.style.transform = "translateY(-2px)";
+            this.style.transition = "transform 0.2s ease";
+          });
+          button.addEventListener("mouseleave", function () {
+            this.style.transform = "translateY(0)";
+          });
+        });
+      });
+    </script>
+    <script id="mobile-menu-interactions">
+      document.addEventListener("DOMContentLoaded", function () {
+        const mobileMenu = document.getElementById("mobile-menu");
+        const mobileMenuButton = document.getElementById("mobile-menu-button");
+        const closeMobileMenu = document.getElementById("close-mobile-menu");
+        const mobileMenuContent = mobileMenu.querySelector("div:last-child");
+        let isMenuOpen = false;
+        function openMenu() {
+          mobileMenu.classList.remove("hidden");
+          setTimeout(() => {
+            mobileMenuContent.classList.remove("translate-x-full");
+          }, 0);
+          isMenuOpen = true;
+        }
+        function closeMenu() {
+          mobileMenuContent.classList.add("translate-x-full");
+          setTimeout(() => {
+            mobileMenu.classList.add("hidden");
+          }, 300);
+          isMenuOpen = false;
+        }
+        mobileMenuButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isMenuOpen) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        });
+        closeMobileMenu.addEventListener("click", closeMenu);
+        document.addEventListener("click", (e) => {
+          if (
+            isMenuOpen &&
+            !mobileMenuContent.contains(e.target) &&
+            e.target !== mobileMenuButton
+          ) {
+            closeMenu();
+          }
+        });
+        const mobileMenuLinks = mobileMenu.querySelectorAll("a");
+        mobileMenuLinks.forEach((link) => {
+          link.addEventListener("click", () => {
+            closeMenu();
+            const href = link.getAttribute("href");
+            if (href.startsWith("#")) {
+              const targetElement = document.querySelector(href);
+              if (targetElement) {
+                setTimeout(() => {
+                  targetElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 300);
+              }
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

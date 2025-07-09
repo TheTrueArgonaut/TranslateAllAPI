@@ -1,32 +1,319 @@
-{% extends "base.html" %}
-{% block title %}Your Profile — Argonaut Digital Ventures{% endblock %}
-{% block content %}
-<div class="container" style="max-width:500px;margin:2rem auto;">
-  <h2>Welcome, {{ current_user.username }}</h2>
+<!DOCTYPE html>
+<html lang="en">
 
-    {% if subscription_status == 'active' and key %}
-    <div style="background:#d4edda;border:1px solid #c3e6cb;padding:1rem;border-radius:4px;margin-bottom:1rem;">
-        <h3 style="color:#155724;margin-top:0;"> Active Subscription</h3>
-        <p><strong>Your API Key:</strong></p>
-        <input type="text" readonly value="{{ key[0] }}"
-               style="width:100%;padding:8px;margin-bottom:1rem;font-family:monospace;">
-        <p><small>Created: {{ key[1] }} | Uses: {{ key[2] }}/2000</small></p>
-    </div>
-    {% elif subscription_status == 'inactive' %}
-    <div style="background:#f8d7da;border:1px solid #f5c6cb;padding:1rem;border-radius:4px;margin-bottom:1rem;">
-        <h3 style="color:#721c24;margin-top:0;"> No Active Subscription</h3>
-        <p>You need an active subscription to get an API key and access the translation service.</p>
-        <p><a href="/demo"
-              style="background:#007bff;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;">Subscribe
-            Now</a></p>
-    </div>
-  {% else %}
-    <div style="background:#fff3cd;border:1px solid #ffeaa7;padding:1rem;border-radius:4px;margin-bottom:1rem;">
-        <h3 style="color:#856404;margin-top:0;"> Setting up your API key...</h3>
-        <p>Please refresh the page in a moment.</p>
-    </div>
-  {% endif %}
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KRATOS - Secure Your Digital Life with AI-Powered Protection</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#dc2626",
+                        secondary: "#1a1a1a",
+                    },
+                    borderRadius: {
+                        none: "0px",
+                        sm: "4px",
+                        DEFAULT: "8px",
+                        md: "12px",
+                        lg: "16px",
+                        xl: "20px",
+                        "2xl": "24px",
+                        "3xl": "32px",
+                        full: "9999px",
+                        button: "8px",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+    </style>
+</head>
 
-    <p style="margin-top:1rem;"><a href="/logout">Log out</a></p>
-</div>
-{% endblock %}
+<body>
+    <header class="sticky top-0 z-50 bg-[#0a0a0a] border-b border-gray-800">
+        <div class="w-full px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="./index.html">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl ['Poppins','Helvetica','Arial',sans-serif] text-primary">
+                            Argonaut DV
+                        </h1>
+                    </div>
+                </a>
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="./index.html#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
+                    <a href="./privacy-policy.html" class="text-gray-300 hover:text-primary transition-colors">Privacy
+                        Policy</a>
+                    <a href="./terms-and-condition.html"
+                        class="text-gray-300 hover:text-primary transition-colors">Terms &
+                        Conditions</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <a href="./login.html" class="hidden md:block">
+                        <button
+                            class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
+                            Login
+                        </button>
+                    </a>
+                    <a href="./profile.html"
+                        class="hidden md:flex items-center justify-center w-10 h-10 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
+                        <i class="ri-user-3-line text-xl"></i>
+                    </a>
+                    
+                    <button id="mobile-menu-button"
+                        class="md:hidden w-10 h-10 flex items-center justify-center text-gray-300">
+                        <i class="ri-menu-line text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div
+            class="fixed right-0 top-0 w-64 h-full bg-[#0a0a0a] border-l border-gray-800 p-6 transform transition-transform duration-300 translate-x-full">
+            <div class="flex justify-end mb-8">
+                <button id="close-mobile-menu" class="w-10 h-10 flex items-center justify-center text-gray-300">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            <div class="flex flex-col space-y-6">
+                <a href="./index.html#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
+                <a href="./privacy-policy.html" class="text-gray-300 hover:text-primary transition-colors">Privacy
+                    Policy</a>
+                <a href="./terms-and-condition.html" class="text-gray-300 hover:text-primary transition-colors">Terms &
+                    Conditions</a>
+                <a href="./login.html">
+                    <button
+                        class="w-full bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
+                        Login
+                    </button>
+                </a>
+                <a href="./profile.html"
+                    class="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors">
+                    <i class="ri-user-3-line"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <section class="min-h-screen bg-[#0a0a0a] flex items-center justify-center py-20">
+        <div class="w-full max-w-3xl mx-auto px-6">
+            <div class="bg-[#1a1a1a] p-8 md:p-12 rounded-2xl border border-gray-800">
+                <div class="flex flex-col items-start mb-12">
+                    <div class="flex items-center gap-6 mb-8 w-full">
+                        <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                            <i class="ri-user-3-line text-4xl text-primary"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl text-gray-100 mb-2">Welcome, Sakelarios</h2>
+                            <p class="text-xl text-gray-300">sakelariosak@gmail.com</p>
+                        </div>
+                    </div>
+                    <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-[#111111] p-6 rounded-xl border border-gray-800">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <i class="ri-key-2-line text-xl text-primary"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-100">API Key</h3>
+                                    <p class="text-gray-400">Not Generated</p>
+                                </div>
+                            </div>
+                            <button
+                                class="w-full bg-primary/10 text-primary px-4 py-2 !rounded-button hover:bg-primary/20 transition-colors whitespace-nowrap">Generate
+                                Key</button>
+                        </div>
+                        <div class="bg-[#111111] p-6 rounded-xl border border-gray-800">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <i class="ri-bar-chart-line text-xl text-primary"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-100">API Usage</h3>
+                                    <p class="text-gray-400">0 / 0 calls</p>
+                                </div>
+                            </div>
+                            <div class="w-full bg-[#1a1a1a] rounded-lg h-2">
+                                <div class="bg-primary h-full rounded-lg w-0"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full bg-red-100/10 p-6 rounded-xl border border-red-200/20 mb-8">
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                                <i class="ri-error-warning-line text-xl text-red-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-medium text-red-400 mb-2">No Active Subscription</h3>
+                                <p class="text-red-300 mb-4">You need an active subscription to get an API key and
+                                    access the translation service.</p>
+                                <button
+                                    class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">Subscribe
+                                    Now</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="text-primary hover:text-primary/80 transition-colors">Account Settings</a>
+                        <span class="text-gray-600">•</span>
+                        <a href="#" class="text-primary hover:text-primary/80 transition-colors">Log out</a>
+                    </div>
+                </div>
+
+            </div>
+    </section>
+
+    <footer class="bg-black text-white py-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-400 text-sm">
+                    © 2025 KRATOS Security. All rights reserved.
+                </p>
+                <a href="mailto:SakelariosAll@ArgonautDigitalVentures.com" class="text-primary hover:text-blue-300 transition-colors">
+                    SakelariosAll@ArgonautDigitalVentures.com
+                </a>
+            </div>
+        </div>
+    </footer>
+    <script id="smooth-scroll">
+        document.addEventListener("DOMContentLoaded", function () {
+            const links = document.querySelectorAll('a[href^="#"]');
+            links.forEach((link) => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute("href");
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+    <script id="header-scroll">
+        document.addEventListener("DOMContentLoaded", function () {
+            const header = document.querySelector("header");
+            let lastScrollY = window.scrollY;
+            window.addEventListener("scroll", function () {
+                if (window.scrollY > 100) {
+                    header.classList.add("shadow-lg");
+                } else {
+                    header.classList.remove("shadow-lg");
+                }
+            });
+        });
+    </script>
+    <script id="translation-demo">
+        document.addEventListener("DOMContentLoaded", function () {
+            const translateBtn = document.getElementById("translateBtn");
+            const sourceText = document.getElementById("sourceText");
+            const langSelect = document.getElementById("langSelect");
+            const result = document.getElementById("result");
+            const translatedText = document.getElementById("translatedText");
+            translateBtn.addEventListener("click", function () {
+                if (!sourceText.value.trim()) {
+                    return;
+                }
+                result.classList.remove("hidden");
+                translatedText.textContent = "Translation in progress...";
+                setTimeout(() => {
+                    translatedText.textContent = "texto";
+                }, 1000);
+            });
+        });
+    </script>
+    <script id="cta-interactions">
+        document.addEventListener("DOMContentLoaded", function () {
+            const ctaButtons = document.querySelectorAll("button");
+            ctaButtons.forEach((button) => {
+                button.addEventListener("mouseenter", function () {
+                    this.style.transform = "translateY(-2px)";
+                    this.style.transition = "transform 0.2s ease";
+                });
+                button.addEventListener("mouseleave", function () {
+                    this.style.transform = "translateY(0)";
+                });
+            });
+        });
+    </script>
+    <script id="mobile-menu-interactions">
+        document.addEventListener("DOMContentLoaded", function () {
+            const mobileMenu = document.getElementById("mobile-menu");
+            const mobileMenuButton = document.getElementById("mobile-menu-button");
+            const closeMobileMenu = document.getElementById("close-mobile-menu");
+            const mobileMenuContent = mobileMenu.querySelector("div:last-child");
+            let isMenuOpen = false;
+            function openMenu() {
+                mobileMenu.classList.remove("hidden");
+                setTimeout(() => {
+                    mobileMenuContent.classList.remove("translate-x-full");
+                }, 0);
+                isMenuOpen = true;
+            }
+            function closeMenu() {
+                mobileMenuContent.classList.add("translate-x-full");
+                setTimeout(() => {
+                    mobileMenu.classList.add("hidden");
+                }, 300);
+                isMenuOpen = false;
+            }
+            mobileMenuButton.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (isMenuOpen) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            });
+            closeMobileMenu.addEventListener("click", closeMenu);
+            document.addEventListener("click", (e) => {
+                if (
+                    isMenuOpen &&
+                    !mobileMenuContent.contains(e.target) &&
+                    e.target !== mobileMenuButton
+                ) {
+                    closeMenu();
+                }
+            });
+            const mobileMenuLinks = mobileMenu.querySelectorAll("a");
+            mobileMenuLinks.forEach((link) => {
+                link.addEventListener("click", () => {
+                    closeMenu();
+                    const href = link.getAttribute("href");
+                    if (href.startsWith("#")) {
+                        const targetElement = document.querySelector(href);
+                        if (targetElement) {
+                            setTimeout(() => {
+                                targetElement.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                });
+                            }, 300);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

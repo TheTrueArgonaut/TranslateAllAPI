@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+{% block title %}Live Demo — Argonaut Digital Ventures{% endblock %}
+
+{% block content %}
+<style>
+    .demo-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .demo-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .demo-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .demo-header h1 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .demo-header p {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+    }
+    
+    .chat-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .chat-panel {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .chat-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .chat-header h3 {
+        margin: 0;
+        color: #495057;
+    }
+    
+    .flag {
+        margin-left: 0.5rem;
+        font-size: 1.2rem;
+    }
+    
+    .chat-messages {
+        height: 300px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .message {
+        margin-bottom: 0.8rem;
+        padding: 0.8rem;
+        border-radius: 8px;
+        position: relative;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .message.user {
+        background: #007bff;
+        color: white;
+        margin-left: 2rem;
+    }
+    
+    .message.assistant {
+        background: #28a745;
+        color: white;
+        margin-right: 2rem;
+    }
+    
+    .message-meta {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        margin-top: 0.3rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .speed-indicator {
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 0.7rem;
+    }
+    
+    .speed-cached {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .speed-api {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .input-container {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .input-container input {
+        flex: 1;
+        padding: 0.8rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    .input-container button {
+        padding: 0.8rem 1.5rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s;
+    }
+    
+    .input-container button:hover {
+        background: #0056b3;
+    }
+    
+    .input-container button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+        border: 1px solid #e9ecef;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    
+    .priority-messages {
+        background: #e8f4f8;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        border: 1px solid #bee5eb;
+    }
+    
+    .priority-messages h3 {
+        color: #0c5460;
+        margin-bottom: 1rem;
+    }
+    
+    .priority-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .priority-btn {
+        padding: 0.5rem 1rem;
+        background: #17a2b8;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    
+    .priority-btn:hover {
+        background: #138496;
+        transform: translateY(-2px);
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .typing-indicator {
+        display: none;
+        padding: 0.5rem;
+        font-style: italic;
+        color: #6c757d;
+    }
+    
+    .typing-indicator.active {
+        display: block;
+    }
+    
+    /* Simple demo styles */
+    .simple-demo textarea {
+        width: 100%;
+        min-height: 100px;
+        margin-bottom: 1rem;
+        padding: 0.8rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+    }
+    
+    .simple-demo select {
+        padding: 0.8rem;
+        margin-right: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background: white;
+    }
+    
+    .translate-btn {
+        padding: 0.8rem 2rem;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s;
+    }
+    
+    .translate-btn:hover {
+        background: #218838;
+    }
+    
+    .result {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        color: #155724;
+    }
+    
+    @media (max-width: 768px) {
+        .chat-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="demo-container">
+    <div class="demo-header">
+        <h1>🚀 TranslateAll API Demo</h1>
+        <p>Experience the power of priority caching and intelligent translation</p>
+    </div>
+
+    <!-- Live Chat Demo Section -->
+    <div class="demo-section">
+        <h2 style="color: #2c3e50; margin-bottom: 1rem;">⚡ Live Chat Translation Demo</h2>
+        <p style="color: #7f8c8d; margin-bottom: 2rem;">See the difference between cached priority
+            messages (⚡ instant) and new phrases (🌐 API calls)</p>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="cacheHits">0</div>
+                <div class="stat-label">⚡ Cache Hits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="apiCalls">0</div>
+                <div class="stat-label">🌐 API Calls</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgSpeed">0ms</div>
+                <div class="stat-label">📊 Avg Speed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTranslations">0</div>
+                <div class="stat-label">🔄 Total Translations</div>
+            </div>
+        </div>
+
+        <div class="priority-messages">
+            <h3>⚡ Try These Priority Messages (Instant Translation)</h3>
+            <div class="priority-buttons">
+                <button class="priority-btn" onclick="sendMessage('Hello')">Hello</button>
+                <button class="priority-btn" onclick="sendMessage('Thank you')">Thank you</button>
+                <button class="priority-btn" onclick="sendMessage('Welcome to TranslateAll API!')">
+                    Welcome
+                </button>
+                <button class="priority-btn" onclick="sendMessage('Help')">Help</button>
+                <button class="priority-btn" onclick="sendMessage('Yes')">Yes</button>
+                <button class="priority-btn" onclick="sendMessage('No')">No</button>
+                <button class="priority-btn" onclick="sendMessage('Please')">Please</button>
+                <button class="priority-btn"
+                        onclick="sendMessage('Processing your translation...')">Processing
+                </button>
+                <button class="priority-btn"
+                        onclick="sendMessage('Translation completed successfully.')">Success
+                </button>
+            </div>
+        </div>
+
+        <div class="priority-messages" style="background: #fff3cd; border-color: #ffeaa7;">
+            <h3 style="color: #856404;">🧪 Test Custom Caching</h3>
+            <p style="color: #856404; margin-bottom: 1rem;">
+                <strong>Try this:</strong> Type any custom phrase below, then type it again to see
+                instant caching!
+            </p>
+            <div class="priority-buttons">
+                <button class="priority-btn" style="background: #ffc107; color: #212529;"
+                        onclick="sendMessage('I love this translation service')">Try: "I love this
+                    translation service"
+                </button>
+                <button class="priority-btn" style="background: #ffc107; color: #212529;"
+                        onclick="sendMessage('This API is incredibly fast')">Try: "This API is
+                    incredibly fast"
+                </button>
+                <button class="priority-btn" style="background: #ffc107; color: #212529;"
+                        onclick="sendMessage('Machine learning is amazing')">Try: "Machine learning
+                    is amazing"
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <h3>English Input</h3>
+                    <span class="flag">🇺🇸</span>
+                </div>
+                <div class="chat-messages" id="englishChat">
+                    <div class="message assistant">
+                        <div>Welcome! Try typing a message to see instant translation.</div>
+                        <div class="message-meta">
+                            <span>System</span>
+                            <span class="speed-indicator speed-cached">⚡ READY</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-container">
+                    <input type="text" id="messageInput" placeholder="Type your message..."
+                           onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()" id="sendBtn">Send</button>
+                </div>
+            </div>
+
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <h3>Spanish Output</h3>
+                    <span class="flag">🇪🇸</span>
+                </div>
+                <div class="chat-messages" id="spanishChat">
+                    <div class="message assistant">
+                        <div>¡Bienvenido! Escribe un mensaje para ver la traducción instantánea.
+                        </div>
+                        <div class="message-meta">
+                            <span>Sistema</span>
+                            <span class="speed-indicator speed-cached">⚡ LISTO</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="loading"></div>
+                    Translating...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Demo Section -->
+    <div class="demo-section simple-demo">
+        <h2 style="color: #2c3e50; margin-bottom: 1rem;">🔧 Simple Translation Tool</h2>
+        <p style="color: #7f8c8d; margin-bottom: 2rem;">Test the API with any text and language</p>
+
+        <!-- Hidden API key storage -->
+        <input id="apiKey" type="hidden"/>
+        <p id="apiKeyStatus" style="margin:10px 0; color: #555;">Generating API key…</p>
+
+        <textarea id="text" placeholder="Enter text here"></textarea>
+
+        <div style="margin-bottom: 1rem;">
+            <select id="lang">
+                <option value="ES">Spanish</option>
+                <option value="FR">French</option>
+                <option value="DE">German</option>
+                <option value="IT">Italian</option>
+                <option value="PT">Portuguese</option>
+                <option value="ZH">Chinese</option>
+                <option value="JA">Japanese</option>
+            </select>
+            <button id="translateBtn" class="translate-btn">Translate Now</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <!-- Stripe Subscribe button -->
+    <div class="demo-section" style="text-align: center;">
+        <h2 style="color: #2c3e50; margin-bottom: 1rem;">🚀 Ready to Get Started?</h2>
+        <p style="color: #7f8c8d; margin-bottom: 2rem;">Subscribe to get your API key and access the
+            full translation platform</p>
+        <button id="checkout-button" class="btn btn-primary btn-lg">Subscribe for $9.99/mo</button>
+    </div>
+</div>
+
+<script>
+    // Base URL for API endpoints
+    const API_BASE = "{{ api_base_url }}";
+
+    // Live Chat Demo Variables
+    let stats = {
+        cacheHits: 0,
+        apiCalls: 0,
+        totalTranslations: 0,
+        responseTimes: [],
+        customPhrases: new Set() // Track custom phrases that have been translated
+    };
+
+    // Track phrases that just got cached
+    let justCachedPhrases = new Set();
+
+    // Auto-create API key on page load
+    async function autoCreateKey() {
+        try {
+            const resp = await fetch(API_BASE + '/create-key', { method: 'POST' });
+            const json = await resp.json();
+            if (json.apiKey) {
+                document.getElementById('apiKey').value = json.apiKey;
+                document.getElementById('apiKeyStatus').textContent = 'API key generated';
+            }
+        } catch (e) {
+            console.error('Failed to auto-create API key', e);
+        }
+    }
+
+    // Simple translation function
+    async function translate() {
+        const text = document.getElementById('text').value.trim();
+        const lang = document.getElementById('lang').value;
+        const out = document.getElementById('result');
+        if (!text) {
+            out.innerHTML = '<div style="color:red;">Please enter some text.</div>';
+            return;
+        }
+        out.innerHTML = 'Translating…';
+        try {
+            const res = await fetch(API_BASE + '/translate', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'X-API-KEY': document.getElementById('apiKey').value },
+                body: JSON.stringify({ text, target: lang })
+            });
+            const data = await res.json();
+            if (data.success) {
+                out.innerHTML = `<div class="result"><strong>Translation:</strong> ${data.translation}</div>`;
+            } else {
+                out.innerHTML = `<div style="color:red;">Error: ${data.error}</div>`;
+            }
+        } catch (e) {
+            out.innerHTML = `<div style="color:red;">Network error: ${e.message}</div>`;
+        }
+    }
+
+    // Live Chat Demo Functions
+    function updateStats() {
+        document.getElementById('cacheHits').textContent = stats.cacheHits;
+        document.getElementById('apiCalls').textContent = stats.apiCalls;
+        document.getElementById('totalTranslations').textContent = stats.totalTranslations;
+        
+        const avgSpeed = stats.responseTimes.length > 0 
+            ? Math.round(stats.responseTimes.reduce((a, b) => a + b) / stats.responseTimes.length)
+            : 0;
+        document.getElementById('avgSpeed').textContent = avgSpeed + 'ms';
+    }
+
+    function addMessage(chatId, text, isUser = false, meta = {}) {
+        const chat = document.getElementById(chatId);
+        const message = document.createElement('div');
+        message.className = `message ${isUser ? 'user' : 'assistant'}`;
+        
+        const speedClass = meta.cached ? 'speed-cached' : 'speed-api';
+        const speedText = meta.cached ? '⚡ CACHED' : '🌐 API CALL';
+        const responseTime = meta.response_time ? Math.round(meta.response_time * 1000) + 'ms' : '';
+        
+        message.innerHTML = `
+            <div>${text}</div>
+            <div class="message-meta">
+                <span>${responseTime}</span>
+                <span class="speed-indicator ${speedClass}">${speedText}</span>
+            </div>
+        `;
+        
+        chat.appendChild(message);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        document.getElementById('typingIndicator').classList.add('active');
+    }
+
+    function hideTypingIndicator() {
+        document.getElementById('typingIndicator').classList.remove('active');
+    }
+
+    async function sendMessage(message) {
+        const input = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        const text = message || input.value.trim();
+        if (!text) return;
+        
+        // Clear input and disable send button
+        input.value = '';
+        sendBtn.disabled = true;
+        
+        // Add message to English chat
+        addMessage('englishChat', text, true);
+        
+        // Show typing indicator
+        showTypingIndicator();
+        
+        try {
+            const startTime = Date.now();
+            
+            const response = await fetch(API_BASE + '/demo-translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: text,
+                    target: 'ES'
+                })
+            });
+            
+            const result = await response.json();
+            const endTime = Date.now();
+            const responseTime = (endTime - startTime) / 1000;
+            
+            hideTypingIndicator();
+            
+            if (result.success) {
+                // Update stats
+                stats.totalTranslations++;
+                stats.responseTimes.push(responseTime * 1000);
+                
+                if (result.cached || result.priority) {
+                    stats.cacheHits++;
+                } else {
+                    stats.apiCalls++;
+                    // This was a new phrase that just got translated and cached
+                    if (!stats.customPhrases.has(text)) {
+                        justCachedPhrases.add(text);
+                        setTimeout(() => {
+                            addMessage('spanishChat', `💡 Pro tip: Type "${text}" again to see instant caching!`, false, {
+                                cached: false,
+                                response_time: 0
+                            });
+                        }, 1000);
+                    }
+                }
+                
+                // Check if this was a repeated phrase that's now cached
+                if ((result.cached || result.priority) && justCachedPhrases.has(text)) {
+                    setTimeout(() => {
+                        addMessage('spanishChat', `🎉 Boom! That was instant because it's cached! ${Math.round(result.response_time * 1000)}ms vs ~500ms`, false, {
+                            cached: true,
+                            response_time: 0
+                        });
+                    }, 500);
+                    justCachedPhrases.delete(text);
+                }
+                
+                stats.customPhrases.add(text);
+                
+                // Add translation to Spanish chat
+                addMessage('spanishChat', result.translation, false, {
+                    cached: result.cached || result.priority,
+                    response_time: responseTime
+                });
+                
+                updateStats();
+            } else {
+                addMessage('spanishChat', 'Error: ' + result.error, false, {
+                    cached: false,
+                    response_time: responseTime
+                });
+            }
+            
+        } catch (error) {
+            hideTypingIndicator();
+            addMessage('spanishChat', 'Network error: ' + error.message, false, {
+                cached: false,
+                response_time: 0
+            });
+        }
+        
+        // Re-enable send button
+        sendBtn.disabled = false;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+        autoCreateKey();
+        document.getElementById('translateBtn').addEventListener('click', translate);
+        updateStats();
+    });
+</script>
+
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3"></script>
+<script>
+    const stripe = Stripe('{{ stripe_publishable_key }}');
+    document.getElementById('checkout-button').addEventListener('click', async () => {
+        try {
+            const resp = await fetch(API_BASE + '/create-checkout-session', { method: 'POST' });
+            if (resp.status === 401) {
+                // not logged in, redirect user to login
+                window.location.href = '/login';
+                return;
+            }
+            const data = await resp.json();
+            if (data.error) {
+                console.error('Checkout session error:', data.error);
+                return;
+            }
+            await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        } catch (err) {
+            console.error('Network or server error:', err);
+        }
+    });
+</script>
+{% endblock %}
