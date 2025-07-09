@@ -500,6 +500,7 @@ def init_db():
     
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    full_name TEXT,
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -643,16 +644,29 @@ def profile():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').lower().strip()
         password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        agree_terms = request.form.get('agreeTerms')
+        
         if not email or not password:
             flash('Email and password are required.')
             return redirect(url_for('register'))
+        
+        if password != confirm_password:
+            flash('Passwords do not match.')
+            return redirect(url_for('register'))
+        
+        if not agree_terms:
+            flash('You must agree to the Terms of Service and Privacy Policy.')
+            return redirect(url_for('register'))
+        
         pw_hash = generate_password_hash(password)
         try:
             conn = sqlite3.connect('api_keys.db')
             c = conn.cursor()
-            c.execute('INSERT INTO users (email, password_hash) VALUES (?, ?)', (email, pw_hash))
+            c.execute('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)', (full_name, email, pw_hash))
             conn.commit()
             session['user_id'] = c.lastrowid
             session['user_email'] = email

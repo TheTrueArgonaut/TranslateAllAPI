@@ -144,7 +144,7 @@
               </p>
             </div>
 
-            <div class="space-y-4">
+              <form method="POST" action="/login" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
                   >Email Address</label
@@ -159,6 +159,8 @@
                   </div>
                   <input
                     type="email"
+                    name="email"
+                    required
                     class="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                     placeholder="Enter your email"
                   />
@@ -180,6 +182,8 @@
                   <input
                     type="password"
                     id="loginPassword"
+                    name="password"
+                    required
                     class="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                     placeholder="Enter your password"
                   />
@@ -217,11 +221,18 @@
               >
                 Sign In
               </button>
+            </form>
 
-  
-
-
+              <!-- Flash messages for login -->
+              {% with messages = get_flashed_messages() %}
+              {% if messages %}
+              {% for message in messages %}
+              <div class="bg-red-100/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mt-4">
+                  {{ message }}
             </div>
+              {% endfor %}
+              {% endif %}
+              {% endwith %}
           </div>
 
           <div id="registerForm" class="space-y-6 hidden">
@@ -231,29 +242,40 @@
                 Join KRATOS for ultimate digital security
               </p>
             </div>
-            <div class="space-y-4">
+              <!-- Flash messages for registration -->
+              {% with messages = get_flashed_messages() %}
+              {% if messages %}
+              {% for message in messages %}
+              <div class="bg-red-100/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-4">
+                  {{ message }}
+              </div>
+              {% endfor %}
+              {% endif %}
+              {% endwith %}
+              <form method="POST" action="/register" class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
-                  >Full Name</label
+                >Full Name</label
                 >
-                <div class="relative">
-                  <div
-                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-                  >
-                    <div class="w-5 h-5 flex items-center justify-center">
-                      <i class="ri-user-line text-gray-400 text-sm"></i>
-                    </div>
+                  <div class="relative">
+                      <div
+                              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                      >
+                          <div class="w-5 h-5 flex items-center justify-center">
+                              <i class="ri-user-line text-gray-400 text-sm"></i>
+                          </div>
+                      </div>
+                      <input
+                              type="text"
+                              name="full_name"
+                              class="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                              placeholder="Enter your full name"
+                      />
                   </div>
-                  <input
-                    type="text"
-                    class="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                    placeholder="Enter your full name"
-                  />
-                </div>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2"
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2"
                   >Email Address</label
                 >
                 <div class="relative">
@@ -266,6 +288,8 @@
                   </div>
                   <input
                     type="email"
+                    name="email"
+                    required
                     class="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                     placeholder="Enter your email"
                   />
@@ -287,6 +311,8 @@
                   <input
                     type="password"
                     id="registerPassword"
+                    name="password"
+                    required
                     class="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                     placeholder="Create a password"
                   />
@@ -300,51 +326,44 @@
                     </div>
                   </button>
                 </div>
-                <!-- <div class="mt-2">
-                  <div class="flex space-x-1">
-                    <div class="h-1 bg-gray-600 rounded-full flex-1"></div>
-                    <div class="h-1 bg-gray-600 rounded-full flex-1"></div>
-                    <div class="h-1 bg-gray-600 rounded-full flex-1"></div>
-                    <div class="h-1 bg-gray-600 rounded-full flex-1"></div>
-                  </div>
-                  <p class="text-xs text-gray-400 mt-1">
-                    Password strength: Weak
-                  </p>
-                </div> -->
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2"
-                  >Confirm Password</label
-                >
-                <div class="relative">
-                  <div
-                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-                  >
-                    <div class="w-5 h-5 flex items-center justify-center">
-                      <i class="ri-lock-line text-gray-400 text-sm"></i>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2"
+                    >Confirm Password</label
+                    >
+                    <div class="relative">
+                        <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                        >
+                            <div class="w-5 h-5 flex items-center justify-center">
+                                <i class="ri-lock-line text-gray-400 text-sm"></i>
+                            </div>
+                        </div>
+                        <input
+                                type="password"
+                                id="confirmPassword"
+                                name="confirm_password"
+                                required
+                                class="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                placeholder="Confirm your password"
+                        />
+                        <button
+                                type="button"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                onclick="togglePassword('confirmPassword', this)"
+                        >
+                            <div class="w-5 h-5 flex items-center justify-center">
+                                <i class="ri-eye-line text-gray-400 text-sm"></i>
+                            </div>
+                        </button>
                     </div>
-                  </div>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    class="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onclick="togglePassword('confirmPassword', this)"
-                  >
-                    <div class="w-5 h-5 flex items-center justify-center">
-                      <i class="ri-eye-line text-gray-400 text-sm"></i>
-                    </div>
-                  </button>
                 </div>
-              </div>
-              <div class="flex items-start">
+
+                <div class="flex items-start">
                 <div class="relative mt-1">
-                  <input type="checkbox" class="sr-only" id="agreeTerms" />
+                    <input type="checkbox" class="sr-only" id="agreeTerms" name="agreeTerms"
+                           required/>
                   <div
                     class="w-4 h-4 bg-gray-700 border border-gray-600 rounded cursor-pointer flex items-center justify-center"
                     onclick="toggleCheckbox('agreeTerms', this)"
@@ -358,13 +377,13 @@
                   <p class="text-sm text-gray-300">
                     I agree to the
                     <a
-                      href="./terms-and-condition.html"
+                            href="/terms"
                       class="text-primary hover:text-red-400 transition-colors"
                       >Terms of Service</a
                     >
                     and
                     <a
-                      href="./privacy-policy.html"
+                            href="/privacy"
                       class="text-primary hover:text-red-400 transition-colors"
                       >Privacy Policy</a
                     >
@@ -378,11 +397,7 @@
               >
                 Create Account
               </button>
-
-
-
-
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -450,6 +465,35 @@
           icon.classList.remove("opacity-100");
         }
       }
+
+      // Registration form validation
+      function validateRegistration(event) {
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const agreeTerms = document.getElementById('agreeTerms').checked;
+
+        if (password !== confirmPassword) {
+          event.preventDefault();
+          alert('Passwords do not match. Please try again.');
+          return false;
+        }
+
+        if (!agreeTerms) {
+          event.preventDefault();
+          alert('You must agree to the Terms of Service and Privacy Policy to continue.');
+          return false;
+        }
+
+        return true;
+      }
+
+      // Add event listener to registration form
+      document.addEventListener('DOMContentLoaded', function() {
+        const registerForm = document.querySelector('#registerForm form');
+        if (registerForm) {
+          registerForm.addEventListener('submit', validateRegistration);
+        }
+      });
     </script>
 
 
