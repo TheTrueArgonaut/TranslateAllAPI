@@ -144,7 +144,7 @@
               </p>
             </div>
 
-              <form method="POST" action="/login" class="space-y-4">
+              <form method="POST" action="/login" class="space-y-4" id="loginFormElement">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
                   >Email Address</label
@@ -252,7 +252,7 @@
               {% endfor %}
               {% endif %}
               {% endwith %}
-              <form method="POST" action="/register" class="space-y-4">
+              <form method="POST" action="/register" class="space-y-4" id="registrationFormElement">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2"
                 >Full Name</label
@@ -394,6 +394,7 @@
               <button
                 type="submit"
                 class="w-full bg-primary hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors !rounded-button whitespace-nowrap"
+                onclick="return validateAndSubmitRegistration(this.form)"
               >
                 Create Account
               </button>
@@ -467,19 +468,17 @@
       }
 
       // Registration form validation
-      function validateRegistration(event) {
+      function validateAndSubmitRegistration(form) {
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
         const agreeTerms = document.getElementById('agreeTerms').checked;
 
         if (password !== confirmPassword) {
-          event.preventDefault();
           alert('Passwords do not match. Please try again.');
           return false;
         }
 
         if (!agreeTerms) {
-          event.preventDefault();
           alert('You must agree to the Terms of Service and Privacy Policy to continue.');
           return false;
         }
@@ -489,9 +488,13 @@
 
       // Add event listener to registration form
       document.addEventListener('DOMContentLoaded', function() {
-        const registerForm = document.querySelector('#registerForm form');
+        const registerForm = document.querySelector('#registrationFormElement');
         if (registerForm) {
-          registerForm.addEventListener('submit', validateRegistration);
+          registerForm.addEventListener('submit', function(event) {
+            if (!validateAndSubmitRegistration(this)) {
+              event.preventDefault();
+            }
+          });
         }
       });
     </script>
