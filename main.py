@@ -18,13 +18,23 @@ import threading
 import asyncio
 from collections import defaultdict
 
+# Set default AWS region if not provided
+if not os.getenv('AWS_REGION'):
+    os.environ['AWS_REGION'] = 'us-east-1'
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret')
 CORS(app)
 
-# Configuration
+# Configuration with better error handling
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")
+if not DEEPL_API_KEY:
+    print("⚠️  WARNING: DEEPL_API_KEY not set - translation will fail!")
+
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+if not stripe.api_key:
+    print("⚠️  WARNING: STRIPE_SECRET_KEY not set - payments will fail!")
+
 stripe_publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 stripe_price_id = os.getenv("STRIPE_PRICE_ID", "")
 
@@ -187,6 +197,10 @@ class PriorityCacheManager:
     
     def _translate_with_deepl(self, text: str, target_lang: str) -> Optional[str]:
         """Internal method to translate with DeepL API"""
+        if not DEEPL_API_KEY:
+            print("❌ DeepL API key not configured")
+            return None
+            
         try:
             resp = requests.post(
                 'https://api.deepl.com/v2/translate',
@@ -197,7 +211,16 @@ class PriorityCacheManager:
             
             if resp.status_code == 200:
                 return resp.json()['translations'][0]['text']
-            return None
+            elif resp.status_code == 403:
+                print(f"❌ DeepL API 403 Forbidden - Check your API key and quota")
+                print(f"   Response: {resp.text}")
+                return None
+            elif resp.status_code == 456:
+                print(f"❌ DeepL API 456 Quota Exceeded")
+                return None
+            else:
+                print(f"❌ DeepL API error {resp.status_code}: {resp.text}")
+                return None
             
         except Exception as e:
             print(f"DeepL translation error: {e}")
@@ -502,8 +525,14 @@ def init_db():
 init_db()
 cache_orchestrator.priority_cache.init_priority_cache_db()
 
-# Initialize SES client
-ses_client = boto3.client('ses', region_name=os.getenv('AWS_REGION'))
+# Initialize SES client with error handling
+try:
+    ses_client = boto3.client('ses', region_name=os.getenv('AWS_REGION'))
+    print("✅ AWS SES client initialized successfully")
+except Exception as e:
+    print(f"⚠️  WARNING: AWS SES client failed to initialize: {e}")
+    print("   Email features will be disabled")
+    ses_client = None
 
 # ==== ENHANCED API ROUTES ====
 
@@ -641,6 +670,10 @@ def translate():
     if not key:
         return jsonify(success=False, error='API key required'), 401
     
+    # Check if DeepL API key is configured
+    if not DEEPL_API_KEY:
+        return jsonify(success=False, error='Translation service not configured. Please contact administrator.'), 503
+    
     # Validate API key and quota
     conn = sqlite3.connect('api_keys.db')
     c = conn.cursor()
@@ -669,10 +702,21 @@ def translate():
     # Use smart cache orchestrator
     try:
         result = cache_orchestrator.handle_translation_request(text, target_lang, key)
+        
+        # If translation failed due to API issues, return specific error
+        if not result.get('success'):
+            error_msg = result.get('error', 'Translation failed')
+            if 'DeepL API error: 403' in error_msg:
+                return jsonify(success=False, error='DeepL API error: 403 - Invalid API key or quota exceeded'), 403
+            elif 'DeepL API error: 456' in error_msg:
+                return jsonify(success=False, error='DeepL quota exceeded'), 429
+            else:
+                return jsonify(success=False, error=error_msg), 500
+        
         return jsonify(result)
         
     except Exception as e:
-        return jsonify(success=False, error=str(e)), 500
+        return jsonify(success=False, error=f'Translation service error: {str(e)}'), 500
 
 @app.route('/translate-batch', methods=['POST'])
 def translate_batch():
@@ -807,14 +851,15 @@ def forgot_password():
         conn.commit()
         reset_url = f"{request.host_url.rstrip('/')}/reset-password?token={token}"
         try:
-            ses_client.send_email(
-                Source=os.getenv('SES_EMAIL'),
-                Destination={'ToAddresses':[email]},
-                Message={
-                    'Subject': {'Data':'Reset Your Password'},
-                    'Body': {'Text': {'Data':f'Click to reset your password: {reset_url}'}}
-                }
-            )
+            if ses_client:
+                ses_client.send_email(
+                    Source=os.getenv('SES_EMAIL'),
+                    Destination={'ToAddresses':[email]},
+                    Message={
+                        'Subject': {'Data':'Reset Your Password'},
+                        'Body': {'Text': {'Data':f'Click to reset your password: {reset_url}'}}
+                    }
+                )
         except ClientError as e:
             app.logger.error(f"SES send failed: {e}")
     conn.close()
