@@ -489,15 +489,7 @@ def init_db():
     conn = sqlite3.connect('api_keys.db')
     c = conn.cursor()
     
-    # Existing tables
-    c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
-                  key TEXT PRIMARY KEY, created TIMESTAMP, uses INTEGER DEFAULT 0
-                  )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS sample_uses (
-                  ip TEXT PRIMARY KEY, uses INTEGER DEFAULT 0
-                  )''')
-    
+    # Create users table with email verification fields
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     full_name TEXT,
@@ -509,22 +501,32 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                   )''')
     
+    # Create password_resets table
     c.execute('''CREATE TABLE IF NOT EXISTS password_resets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        token TEXT UNIQUE NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        used INTEGER DEFAULT 0
-    )''')
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    token TEXT NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                  )''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    key TEXT UNIQUE NOT NULL,
+                    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    uses INTEGER DEFAULT 0
+                  )''')
     
     c.execute('''CREATE TABLE IF NOT EXISTS subscriptions (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         user_id INTEGER NOT NULL,
-         customer_id TEXT NOT NULL,
-         subscription_id TEXT NOT NULL,
-         status TEXT NOT NULL,
-         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-     )''')
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    subscription_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                  )''')
     
     conn.commit()
     conn.close()
@@ -980,36 +982,265 @@ def performance_metrics():
 
 # ==== EXISTING ROUTES ====
 
-@app.route('/forgot-password', methods=['POST'])
-def forgot_password():
+@app.route('/resend-verification', methods=['POST'])
+def resend_verification():
     data = request.get_json() or {}
-    email = data.get('email','').lower().strip()
+    email = data.get('email', '').lower().strip()
+    
+    if not email:
+        return jsonify(success=False, error='Email is required')
+    
     conn = sqlite3.connect('api_keys.db')
     c = conn.cursor()
-    c.execute('SELECT id FROM users WHERE email=?', (email,))
+    c.execute('SELECT id, full_name, email_verified FROM users WHERE email = ?', (email,))
     row = c.fetchone()
-    if row:
-        user_id = row[0]
-        token = uuid.uuid4().hex
-        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    if not row:
+        return jsonify(success=False, error='Email not found')
+    
+    user_id, full_name, email_verified = row
+    
+    if email_verified == 1:
+        return jsonify(success=False, error='Email is already verified')
+    
+    # Generate new verification token
+    verification_token = uuid.uuid4().hex
+    verification_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
+    
+    c.execute('UPDATE users SET verification_token = ?, verification_token_expires = ? WHERE id = ?', 
+              (verification_token, verification_token_expires, user_id))
+    conn.commit()
+    conn.close()
+    
+    # Send verification email
+    verification_url = f"{request.host_url.rstrip('/')}/verify-email?token={verification_token}"
+    
+    try:
+        if ses_client:
+            ses_client.send_email(
+                Source=os.getenv('SES_EMAIL', 'noreply@argonautdigitalventures.com'),
+                Destination={'ToAddresses': [email]},
+                Message={
+                    'Subject': {'Data': 'Verify Your Email - Argonaut Digital Ventures'},
+                    'Body': {
+                        'Html': {
+                            'Data': f'''
+                            <html>
+                            <head>
+                                <style>
+                                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                                    .header {{ background: #dc2626; color: white; padding: 20px; text-align: center; }}
+                                    .content {{ background: #f8f9fa; padding: 30px; }}
+                                    .button {{ display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; }}
+                                    .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="header">
+                                        <h1>Email Verification</h1>
+                                    </div>
+                                    <div class="content">
+                                        <h2>Hi {full_name or 'there'}!</h2>
+                                        <p>Here's your new verification link to complete your registration:</p>
+                                        <p style="text-align: center; margin: 30px 0;">
+                                            <a href="{verification_url}" class="button">Verify Your Email</a>
+                                        </p>
+                                        <p>Or copy and paste this link into your browser:</p>
+                                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                                        <p><strong>This link will expire in 30 minutes.</strong></p>
+                                    </div>
+                                    <div class="footer">
+                                        <p> 2025 Argonaut Digital Ventures. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                            '''
+                        }
+                    }
+                }
+            )
+            return jsonify(success=True, message='Verification email sent successfully')
+        else:
+            return jsonify(success=False, error='Email service not configured')
+            
+    except ClientError as e:
+        print(f"SES send failed: {e}")
+        return jsonify(success=False, error='Failed to send verification email')
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').lower().strip()
+        
+        if not email:
+            flash('Email is required.', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        conn = sqlite3.connect('api_keys.db')
+        c = conn.cursor()
+        c.execute('SELECT id, full_name FROM users WHERE email = ?', (email,))
+        row = c.fetchone()
+        
+        if not row:
+            # Don't reveal if email exists or not for security
+            flash('If an account with that email exists, we have sent you a password reset link.', 'success')
+            return redirect(url_for('forgot_password'))
+        
+        user_id, full_name = row
+        
+        # Generate password reset token
+        reset_token = uuid.uuid4().hex
+        reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
+        
         c.execute('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?,?,?)',
-                  (user_id, token, expires))
+                  (user_id, reset_token, reset_token_expires))
         conn.commit()
-        reset_url = f"{request.host_url.rstrip('/')}/reset-password?token={token}"
+        conn.close()
+        
+        # Send password reset email
+        reset_url = f"{request.host_url.rstrip('/')}/reset-password?token={reset_token}"
+        
         try:
             if ses_client:
                 ses_client.send_email(
-                    Source=os.getenv('SES_EMAIL'),
-                    Destination={'ToAddresses':[email]},
+                    Source=os.getenv('SES_EMAIL', 'noreply@argonautdigitalventures.com'),
+                    Destination={'ToAddresses': [email]},
                     Message={
-                        'Subject': {'Data':'Reset Your Password'},
-                        'Body': {'Text': {'Data':f'Click to reset your password: {reset_url}'}}
+                        'Subject': {'Data': 'Password Reset - Argonaut Digital Ventures'},
+                        'Body': {
+                            'Html': {
+                                'Data': f'''
+                                <html>
+                                <head>
+                                    <style>
+                                        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                                        .header {{ background: #dc2626; color: white; padding: 20px; text-align: center; }}
+                                        .content {{ background: #f8f9fa; padding: 30px; }}
+                                        .button {{ display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; }}
+                                        .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <div class="header">
+                                            <h1>Password Reset Request</h1>
+                                        </div>
+                                        <div class="content">
+                                            <h2>Hi {full_name or 'there'}!</h2>
+                                            <p>You have requested to reset your password for your Argonaut Digital Ventures account.</p>
+                                            <p>Click the button below to reset your password:</p>
+                                            <p style="text-align: center; margin: 30px 0;">
+                                                <a href="{reset_url}" class="button">Reset Password</a>
+                                            </p>
+                                            <p>Or copy and paste this link into your browser:</p>
+                                            <p style="word-break: break-all; color: #666;">{reset_url}</p>
+                                            <p><strong>This link will expire in 30 minutes.</strong></p>
+                                            <p>If you did not request a password reset, please ignore this email.</p>
+                                        </div>
+                                        <div class="footer">
+                                            <p> 2025 Argonaut Digital Ventures. All rights reserved.</p>
+                                        </div>
+                                    </div>
+                                </body>
+                                </html>
+                                '''
+                            }
+                        }
                     }
                 )
+                flash('If an account with that email exists, we have sent you a password reset link.', 'success')
+            else:
+                flash('Email service not configured. Please contact support.', 'error')
+                
         except ClientError as e:
-            app.logger.error(f"SES send failed: {e}")
+            print(f"SES send failed: {e}")
+            flash('Failed to send password reset email. Please try again.', 'error')
+        
+        return redirect(url_for('forgot_password'))
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    token = request.args.get('token') or request.form.get('token')
+    
+    if not token:
+        flash('Invalid or missing reset token.', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not password or not confirm_password:
+            flash('Both password fields are required.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        # Verify token and update password
+        conn = sqlite3.connect('api_keys.db')
+        c = conn.cursor()
+        c.execute('SELECT user_id, expires_at, used FROM password_resets WHERE token = ?', (token,))
+        row = c.fetchone()
+        
+        if not row:
+            flash('Invalid reset token.', 'error')
+            return redirect(url_for('login'))
+        
+        user_id, expires_at, used = row
+        
+        if used == 1:
+            flash('Reset token has already been used.', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if expires_at < datetime.now(timezone.utc):
+            flash('Reset token has expired. Please request a new password reset.', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        # Update password and mark token as used
+        password_hash = generate_password_hash(password)
+        c.execute('UPDATE users SET password_hash = ? WHERE id = ?', 
+                  (password_hash, user_id))
+        c.execute('UPDATE password_resets SET used = 1 WHERE token = ?', (token,))
+        conn.commit()
+        conn.close()
+        
+        flash('Password updated successfully! You can now sign in with your new password.', 'success')
+        return redirect(url_for('login'))
+    
+    # GET request - verify token and show reset form
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    c.execute('SELECT user_id, expires_at, used FROM password_resets WHERE token = ?', (token,))
+    row = c.fetchone()
     conn.close()
-    return jsonify(success=True)
+    
+    if not row:
+        flash('Invalid reset token.', 'error')
+        return redirect(url_for('login'))
+    
+    user_id, expires_at, used = row
+    
+    if used == 1:
+        flash('Reset token has already been used.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if expires_at < datetime.now(timezone.utc):
+        flash('Reset token has expired. Please request a new password reset.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    return render_template('reset_password.html', token=token)
 
 @app.route('/logout')
 def logout():
