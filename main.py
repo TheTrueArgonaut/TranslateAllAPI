@@ -48,9 +48,213 @@ BATCH_SIZE = 5
 CACHE_EXPIRY_HOURS = 24
 PRIORITY_CACHE_SIZE = 50
 
+# IP Rate Limiting Configuration (only for actual API calls)
+IP_RATE_LIMITS = {
+    'demo': {
+        'per_minute': 5,      # 5 DeepL API calls per minute per IP
+        'per_hour': 20,       # 20 DeepL API calls per hour per IP  
+        'per_day': 100        # 100 DeepL API calls per day per IP
+    },
+    'paid': {
+        'per_minute': 30,     # More generous for paid users
+        'per_hour': 200,      
+        'per_day': 2000
+    }
+}
+
 @app.context_processor
 def inject_now():
     return {'now': datetime.now(timezone.utc)}
+
+# ==== IP RATE LIMITING SYSTEM ====
+
+class IPRateLimiter:
+    """IP-based rate limiting for actual DeepL API calls only"""
+    
+    def __init__(self):
+        self.init_rate_limit_db()
+    
+    def init_rate_limit_db(self):
+        """Initialize IP rate limiting database table"""
+        conn = sqlite3.connect('api_keys.db')
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS ip_rate_limits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_address TEXT NOT NULL,
+            endpoint_type TEXT NOT NULL,
+            minute_count INTEGER DEFAULT 0,
+            hour_count INTEGER DEFAULT 0,
+            day_count INTEGER DEFAULT 0,
+            minute_reset TIMESTAMP NOT NULL,
+            hour_reset TIMESTAMP NOT NULL,
+            day_reset TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(ip_address, endpoint_type)
+        )''')
+        conn.commit()
+        conn.close()
+    
+    def get_client_ip(self, request):
+        """Get client IP address, handling proxies"""
+        # Check for forwarded IPs (common in production)
+        forwarded_ips = request.headers.get('X-Forwarded-For')
+        if forwarded_ips:
+            return forwarded_ips.split(',')[0].strip()
+        
+        # Check for real IP (some proxies)
+        real_ip = request.headers.get('X-Real-IP')
+        if real_ip:
+            return real_ip
+        
+        # Fall back to remote address
+        return request.remote_addr or '127.0.0.1'
+    
+    def check_and_update_rate_limit(self, request, endpoint_type='demo', increment=True):
+        """
+        Check if IP is within rate limits and optionally increment counter
+        Returns: (allowed: bool, remaining_calls: dict, reset_times: dict)
+        """
+        ip_address = self.get_client_ip(request)
+        limits = IP_RATE_LIMITS.get(endpoint_type, IP_RATE_LIMITS['demo'])
+        
+        conn = sqlite3.connect('api_keys.db')
+        c = conn.cursor()
+        
+        now = datetime.now(timezone.utc)
+        
+        # Calculate reset times
+        minute_reset = now + timedelta(minutes=1)
+        hour_reset = now + timedelta(hours=1) 
+        day_reset = now + timedelta(days=1)
+        
+        # Get or create IP record
+        c.execute('''SELECT minute_count, hour_count, day_count, 
+                            minute_reset, hour_reset, day_reset 
+                     FROM ip_rate_limits 
+                     WHERE ip_address = ? AND endpoint_type = ?''', 
+                 (ip_address, endpoint_type))
+        row = c.fetchone()
+        
+        if not row:
+            # First time seeing this IP for this endpoint
+            if increment:
+                c.execute('''INSERT INTO ip_rate_limits 
+                            (ip_address, endpoint_type, minute_count, hour_count, day_count,
+                             minute_reset, hour_reset, day_reset) 
+                            VALUES (?, ?, 1, 1, 1, ?, ?, ?)''',
+                         (ip_address, endpoint_type, minute_reset, hour_reset, day_reset))
+                conn.commit()
+            
+            conn.close()
+            return True, {
+                'minute': limits['per_minute'] - (1 if increment else 0),
+                'hour': limits['per_hour'] - (1 if increment else 0),
+                'day': limits['per_day'] - (1 if increment else 0)
+            }, {
+                'minute': minute_reset.isoformat(),
+                'hour': hour_reset.isoformat(), 
+                'day': day_reset.isoformat()
+            }
+        
+        minute_count, hour_count, day_count, minute_reset_db, hour_reset_db, day_reset_db = row
+        
+        # Convert string timestamps back to datetime
+        minute_reset_db = datetime.fromisoformat(minute_reset_db.replace('Z', '+00:00'))
+        hour_reset_db = datetime.fromisoformat(hour_reset_db.replace('Z', '+00:00'))  
+        day_reset_db = datetime.fromisoformat(day_reset_db.replace('Z', '+00:00'))
+        
+        # Reset counters if time windows have passed
+        if now >= minute_reset_db:
+            minute_count = 0
+            minute_reset_db = now + timedelta(minutes=1)
+        
+        if now >= hour_reset_db:
+            hour_count = 0
+            hour_reset_db = now + timedelta(hours=1)
+            
+        if now >= day_reset_db:
+            day_count = 0
+            day_reset_db = now + timedelta(days=1)
+        
+        # Check limits
+        if minute_count >= limits['per_minute']:
+            conn.close()
+            return False, {
+                'minute': 0,
+                'hour': max(0, limits['per_hour'] - hour_count),
+                'day': max(0, limits['per_day'] - day_count)
+            }, {
+                'minute': minute_reset_db.isoformat(),
+                'hour': hour_reset_db.isoformat(),
+                'day': day_reset_db.isoformat()
+            }
+        
+        if hour_count >= limits['per_hour']:
+            conn.close()
+            return False, {
+                'minute': max(0, limits['per_minute'] - minute_count),
+                'hour': 0,
+                'day': max(0, limits['per_day'] - day_count)
+            }, {
+                'minute': minute_reset_db.isoformat(),
+                'hour': hour_reset_db.isoformat(),
+                'day': day_reset_db.isoformat()
+            }
+            
+        if day_count >= limits['per_day']:
+            conn.close()
+            return False, {
+                'minute': max(0, limits['per_minute'] - minute_count),
+                'hour': max(0, limits['per_hour'] - hour_count),
+                'day': 0
+            }, {
+                'minute': minute_reset_db.isoformat(),
+                'hour': hour_reset_db.isoformat(),
+                'day': day_reset_db.isoformat()
+            }
+        
+        # Increment counters if requested
+        if increment:
+            minute_count += 1
+            hour_count += 1
+            day_count += 1
+            
+            c.execute('''UPDATE ip_rate_limits 
+                        SET minute_count = ?, hour_count = ?, day_count = ?,
+                            minute_reset = ?, hour_reset = ?, day_reset = ?
+                        WHERE ip_address = ? AND endpoint_type = ?''',
+                     (minute_count, hour_count, day_count,
+                      minute_reset_db, hour_reset_db, day_reset_db,
+                      ip_address, endpoint_type))
+            conn.commit()
+        
+        conn.close()
+        
+        return True, {
+            'minute': limits['per_minute'] - minute_count,
+            'hour': limits['per_hour'] - hour_count,
+            'day': limits['per_day'] - day_count
+        }, {
+            'minute': minute_reset_db.isoformat(),
+            'hour': hour_reset_db.isoformat(),
+            'day': day_reset_db.isoformat()
+        }
+    
+    def get_rate_limit_info(self, request, endpoint_type='demo'):
+        """Get current rate limit status without incrementing"""
+        allowed, remaining, reset_times = self.check_and_update_rate_limit(
+            request, endpoint_type, increment=False
+        )
+        
+        return {
+            'allowed': allowed,
+            'remaining': remaining,
+            'reset_times': reset_times,
+            'limits': IP_RATE_LIMITS.get(endpoint_type, IP_RATE_LIMITS['demo'])
+        }
+
+# Initialize rate limiter
+ip_rate_limiter = IPRateLimiter()
 
 # ==== ENHANCED TRANSLATION PIPELINE COMPONENTS ====
 
@@ -275,7 +479,7 @@ class PriorityCacheManager:
         }
 
 class TranslationBatcher:
-    """Handles batch translation processing with rate limiting"""
+    """Handles batch translation processing with rate limiting and smart IP-based DeepL call limiting"""
     
     def __init__(self, rate_limit: int = TRANSLATION_RATE_LIMIT):
         self.rate_limit = rate_limit
@@ -285,7 +489,7 @@ class TranslationBatcher:
         self.rate_lock = threading.Lock()
     
     def _rate_limit_check(self):
-        """Implement rate limiting"""
+        """Implement classic synthetic rate limiting (in addition to IP-based for DeepL calls)"""
         with self.rate_lock:
             current_time = time.time()
             if current_time - self.last_request_time >= 1.0:
@@ -341,8 +545,10 @@ class TranslationBatcher:
         conn.commit()
         conn.close()
     
-    def translate_single(self, text: str, target_lang: str) -> Dict[str, any]:
-        """Translate single text with caching and rate limiting"""
+    def translate_single(self, text: str, target_lang: str, request=None, api_key=None, endpoint_type='demo') -> Dict[str, any]:
+        """Translate single text with caching and rate limiting and DeepL IP call limiting
+        NOTE: request and api_key are only required for IP-based rate limiting.
+        """
         start_time = time.time()
         
         # Check cache first
@@ -355,7 +561,26 @@ class TranslationBatcher:
                 'response_time': time.time() - start_time
             }
         
-        # Apply rate limiting
+        # Only if NOT cached, we check IP DeepL call limits
+        if request:
+            allowed, remaining, reset_times = ip_rate_limiter.check_and_update_rate_limit(
+                request, endpoint_type, increment=True
+            )
+            if not allowed:
+                return {
+                    'success': False,
+                    'error': f"Rate limit exceeded for DeepL API calls from your IP. Limit resets at: {reset_times}",
+                    'ip_rate_limit': {
+                        'allowed': False,
+                        'remaining': remaining,
+                        'reset_times': reset_times,
+                        'limits': IP_RATE_LIMITS.get(endpoint_type, IP_RATE_LIMITS['demo'])
+                    },
+                    'cached': False,
+                    'response_time': time.time() - start_time
+                }
+        
+        # Apply synthetic rate limiting guard (simple per-process)
         self._rate_limit_check()
         
         # Translate with DeepL
@@ -393,8 +618,8 @@ class TranslationBatcher:
                 'response_time': time.time() - start_time
             }
     
-    def translate_batch(self, texts: List[str], target_lang: str) -> List[Dict[str, any]]:
-        """Translate multiple texts in batch"""
+    def translate_batch(self, texts: List[str], target_lang: str, request=None, api_key=None, endpoint_type='demo') -> List[Dict[str, any]]:
+        """Translate multiple texts in batch, honoring IP rate limits for actual API calls only"""
         results = []
         
         for i in range(0, len(texts), self.batch_size):
@@ -402,7 +627,7 @@ class TranslationBatcher:
             batch_results = []
             
             for text in batch:
-                result = self.translate_single(text, target_lang)
+                result = self.translate_single(text, target_lang, request=request, api_key=api_key, endpoint_type=endpoint_type)
                 batch_results.append(result)
             
             results.extend(batch_results)
@@ -435,8 +660,8 @@ class SmartCacheOrchestrator:
         
         return None
     
-    def handle_translation_request(self, text: str, target_lang: str, api_key: str) -> Dict[str, any]:
-        """Main translation orchestration method"""
+    def handle_translation_request(self, text: str, target_lang: str, api_key: str, request=None, endpoint_type='demo') -> Dict[str, any]:
+        """Main translation orchestration method (now supports passing request for IP DeepL call rate limit)"""
         start_time = time.time()
         
         # Check if this is a priority message
@@ -455,11 +680,17 @@ class SmartCacheOrchestrator:
                     'response_time': response_time
                 }
         
-        # Fall back to regular translation
-        result = self.batch_translator.translate_single(text, target_lang)
+        # Paid or demo?
+        if api_key and api_key != 'demo':
+            call_endpoint_type = 'paid'
+        else:
+            call_endpoint_type = 'demo'
+
+        # Fall back to regular translation, pass request for IP rate limiting
+        result = self.batch_translator.translate_single(text, target_lang, request=request, api_key=api_key, endpoint_type=call_endpoint_type)
         
         # Log performance metrics
-        if result['success']:
+        if result.get('success'):
             cache_type = 'regular_cache_hit' if result['cached'] else 'api_translation'
             self.performance_metrics[cache_type].append(result['response_time'])
         
@@ -531,9 +762,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Initialize database and cache
+# Initialize database and cache, and IP rate limiter table
 init_db()
 cache_orchestrator.priority_cache.init_priority_cache_db()
+ip_rate_limiter.init_rate_limit_db()
 
 # Initialize SES client with error handling
 try:
@@ -813,7 +1045,7 @@ def create_checkout_session():
 
 @app.route('/translate', methods=['POST'])
 def translate():
-    """Enhanced translation endpoint with smart caching"""
+    """Enhanced translation endpoint with smart caching and IP DeepL call rate limiting"""
     key = request.headers.get('X-API-KEY')
     if not key:
         return jsonify(success=False, error='API key required'), 401
@@ -847,13 +1079,21 @@ def translate():
     if not text:
         return jsonify(success=False, error='No text provided')
     
-    # Use smart cache orchestrator
+    # Smart DeepL API call rate limiting by IP for PAID (generous) or DEMO (strict)
+    
+    # Call the orchestrator, which delegates to our DeepL call limiting logic for uncached
     try:
-        result = cache_orchestrator.handle_translation_request(text, target_lang, key)
+        result = cache_orchestrator.handle_translation_request(
+            text, target_lang, key, request=request,
+            endpoint_type='paid' if key != 'demo' else 'demo'
+        )
         
-        # If translation failed due to API issues, return specific error
+        # If translation failed due to API issues or explicit IP limit, catch that:
         if not result.get('success'):
             error_msg = result.get('error', 'Translation failed')
+            if error_msg and "DeepL API calls from your IP" in error_msg:
+                # IP-based DeepL call rate limit exceeded
+                return jsonify(success=False, error=error_msg, ip_rate_limit=result.get('ip_rate_limit')), 429
             if 'DeepL API error: 403' in error_msg:
                 return jsonify(success=False, error='DeepL API error: 403 - Invalid API key or quota exceeded'), 403
             elif 'DeepL API error: 456' in error_msg:
@@ -868,7 +1108,7 @@ def translate():
 
 @app.route('/translate-batch', methods=['POST'])
 def translate_batch():
-    """Batch translation endpoint"""
+    """Batch translation endpoint (with smart IP DeepL call rate limiting for DeepL, only uncached are counted)"""
     key = request.headers.get('X-API-KEY')
     if not key:
         return jsonify(success=False, error='API key required'), 401
@@ -902,8 +1142,13 @@ def translate_batch():
     conn.commit()
     conn.close()
     
+    # batch_translate applies smart DeepL IP call limiting ONLY for uncached requests
     try:
-        results = cache_orchestrator.batch_translator.translate_batch(texts, target_lang)
+        call_endpoint_type = 'paid' if key != 'demo' else 'demo'
+        results = cache_orchestrator.batch_translator.translate_batch(
+            texts, target_lang, request=request, api_key=key, endpoint_type=call_endpoint_type
+        )
+        # Any IP-based limit blocking gets returned in the individual result(s)
         return jsonify(success=True, results=results)
         
     except Exception as e:
@@ -1294,7 +1539,7 @@ def stripe_webhook():
 
 @app.route('/demo-translate', methods=['POST'])
 def demo_translate():
-    """Demo translation endpoint that doesn't require API key"""
+    """Demo translation endpoint (NO API KEY, but strict IP DeepL call limiting, only for uncached)"""
     body = request.get_json()
     text = (body or {}).get('text', '').strip()
     target_lang = body.get('target', 'ES')
@@ -1306,13 +1551,39 @@ def demo_translate():
     if not DEEPL_API_KEY:
         return jsonify(success=False, error='Translation service not configured')
     
-    # Use smart cache orchestrator (no API key needed for demo)
+    # Use smart cache orchestrator (no API key needed for demo)... pass request object so DeepL call limiting by IP can function
     try:
-        result = cache_orchestrator.handle_translation_request(text, target_lang, 'demo')
+        result = cache_orchestrator.handle_translation_request(
+            text, target_lang, 'demo', request=request, endpoint_type='demo'
+        )
+        if not result.get('success'):
+            error_msg = result.get('error', 'Translation failed')
+            if error_msg and "DeepL API calls from your IP" in error_msg:
+                return jsonify(success=False, error=error_msg, ip_rate_limit=result.get('ip_rate_limit')), 429
         return jsonify(result)
         
     except Exception as e:
         return jsonify(success=False, error=f'Translation error: {str(e)}'), 500
+
+@app.route('/rate-limit-status', methods=['GET'])
+def rate_limit_status():
+    """Check IP rate limit status without making an actual translation request"""
+    endpoint_type = request.args.get('type', 'demo')  # 'demo' or 'paid'
+    
+    # Validate endpoint type
+    if endpoint_type not in ['demo', 'paid']:
+        return jsonify(success=False, error='Invalid endpoint type. Use "demo" or "paid"'), 400
+    
+    try:
+        status = ip_rate_limiter.get_rate_limit_info(request, endpoint_type)
+        return jsonify({
+            'success': True,
+            'ip_address': ip_rate_limiter.get_client_ip(request),
+            'endpoint_type': endpoint_type,
+            'status': status
+        })
+    except Exception as e:
+        return jsonify(success=False, error=f'Error checking rate limit: {str(e)}'), 500
 
 @app.route('/verify-email', methods=['GET'])
 def verify_email():
