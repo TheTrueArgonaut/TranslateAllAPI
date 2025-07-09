@@ -372,6 +372,7 @@ class TranslationService(private val apiKey: String) {
     
     suspend fun translate(text: String, target: String): TranslationResponse {
         // ... implementation
+        return TranslationResponse("Hola", true, true, 0.012)
     }
     
     suspend fun populateCache(targetLang: String) {
@@ -421,36 +422,34 @@ cache_orchestrator.performance_metrics['custom_metric'].append(response_time)
 4. Add tests and documentation
 5. Submit a pull request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
+## Support
 
 For support and questions:
 
 - Create an issue on GitHub
-- Email: support@translateall.com
-- Documentation: https://docs.translateall.com
+- Email: sakelariosall@argonautdigitalventures.com
 
-## 🔮 Roadmap
+## Roadmap
 
 ### Upcoming Features
 
-- [ ] Multi-language batch processing
-- [ ] Redis cache integration
-- [ ] Real-time translation streaming
-- [ ] Advanced analytics dashboard
-- [ ] Custom translation models
-- [ ] Webhook notifications
-- [ ] GraphQL API support
+- [x] ~~Multi-language batch processing~~
+- [ ] Cache persistence across server restarts
+- [ ] Simple web dashboard to view translations
+- [ ] Export/import translation cache
+- [ ] API usage statistics and logs
+- [ ] Translation history viewer
+- [ ] Basic admin panel for cache management
+- [ ] Multi-target batch processing (translate to multiple languages at once)
+- [ ] Support for more translation providers (Google Translate, Azure, etc.)
+- [ ] Simple notification system for cache events
 
 ### Performance Targets
 
-- [ ] Sub-5ms priority cache responses
-- [ ] 95% cache hit rate
-- [ ] 1000+ concurrent requests
-- [ ] Auto-scaling capabilities
+- [ ] Maintain sub-15ms priority cache responses
+- [ ] Achieve 90%+ cache hit rate
+- [ ] Handle 100+ concurrent requests smoothly
+- [ ] Optimize database queries for faster lookups
 
 ---
 
