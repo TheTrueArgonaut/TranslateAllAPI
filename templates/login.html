@@ -525,10 +525,15 @@
     <script>
         function handleLoginClick(event) {
           event.preventDefault();
-          if (window.location.pathname === '/login') {
+          console.log('handleLoginClick called, current path:', window.location.pathname);
+          console.log('login URL:', '{{ url_for("login") }}');
+          
+          if (window.location.pathname === '/login' || window.location.pathname === '{{ url_for("login") }}') {
+            console.log('Already on login page, reloading...');
             window.location.reload();
           } else {
-            window.location.href = '/login';
+            console.log('Navigating to login page...');
+            window.location.href = '{{ url_for("login") }}';
           }
         }
     </script>
