@@ -67,10 +67,9 @@
                       Conditions</a>
               </nav>
               <div class="flex items-center space-x-4">
-                  <button class="hidden md:block bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap"
-                          onclick="handleLoginClick()">
+                  <span class="hidden md:block bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap cursor-default">
                       Login
-                  </button>
+                  </span>
                   <a href="{{ url_for('profile') }}"
                       class="hidden md:flex items-center justify-center w-10 h-10 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
                       <i class="ri-user-3-line text-xl"></i>
@@ -102,11 +101,9 @@
               <a href="{{ url_for('terms') }}"
                  class="text-gray-300 hover:text-primary transition-colors">Terms &
                   Conditions</a>
-              <button
-                      class="w-full bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap"
-                      onclick="handleLoginClick()">
+              <span class="w-full bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap cursor-default text-center">
                   Login
-              </button>
+              </span>
               <a href="{{ url_for('profile') }}"
                   class="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors">
                   <i class="ri-user-3-line"></i>
@@ -519,17 +516,41 @@
     </script>
 
     <script>
-        function handleLoginClick() {
-          console.log('handleLoginClick called, current path:', window.location.pathname);
-          console.log('login URL:', '{{ url_for("login") }}');
+        function resendVerification() {
+          const email = document.querySelector('#loginFormElement input[name="email"]').value;
+          const button = document.getElementById('resendBtn');
           
-          if (window.location.pathname === '/login' || window.location.pathname === '{{ url_for("login") }}') {
-            console.log('Already on login page, reloading...');
-            window.location.reload();
-          } else {
-            console.log('Navigating to login page...');
-            window.location.href = '{{ url_for("login") }}';
+          if (!email) {
+            alert('Please enter your email address first');
+            return;
           }
+          
+          button.disabled = true;
+          button.textContent = 'Sending...';
+          
+          fetch('/resend-verification', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Verification email sent! Please check your inbox.');
+            } else {
+              alert('Error: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to send verification email. Please try again.');
+          })
+          .finally(() => {
+            button.disabled = false;
+            button.textContent = 'Resend verification email';
+          });
         }
     </script>
 
@@ -591,44 +612,6 @@
                 });
             });
         });
-    </script>
-    <script>
-        function resendVerification() {
-          const email = document.querySelector('#loginFormElement input[name="email"]').value;
-          const button = document.getElementById('resendBtn');
-          
-          if (!email) {
-            alert('Please enter your email address first');
-            return;
-          }
-          
-          button.disabled = true;
-          button.textContent = 'Sending...';
-          
-          fetch('/resend-verification', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email: email })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              alert('Verification email sent! Please check your inbox.');
-            } else {
-              alert('Error: ' + data.error);
-            }
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to send verification email. Please try again.');
-          })
-          .finally(() => {
-            button.disabled = false;
-            button.textContent = 'Resend verification email';
-          });
-        }
     </script>
   </body>
 </html>
