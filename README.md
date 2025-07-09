@@ -1,7 +1,35 @@
-# Enhanced TranslateAll API 🚀
+# Enhanced TranslateAll Platform 🚀
 
-A high-performance translation API with advanced caching, batch processing, and intelligent
-optimization features inspired by modern mobile app architecture.
+A complete translation platform offering both API services and mobile SDK with advanced caching,
+batch processing, and intelligent optimization features.
+
+## 🌟 Choose Your Integration
+
+### 🌐 REST API Service
+
+Perfect for web applications, backend services, and simple integrations
+
+- HTTP-based translation requests
+- Cloud-hosted with global availability
+- No client-side dependencies
+- Pay-per-use pricing
+
+### 📱 Android SDK (Kratos Translation Engine)
+
+Enterprise-grade mobile translation with offline support
+
+- Predictive caching for instant responses
+- Real-time typing animations
+- Offline translation after cache population
+- Advanced conversation management
+
+### 🔄 Hybrid Approach
+
+Best of both worlds - SDK with API fallback
+
+- SDK handles common translations instantly
+- API provides backup for cache misses
+- Seamless switching between local and cloud translation
 
 ## ✨ Key Features
 
@@ -192,6 +220,75 @@ Get real-time performance metrics
 }
 ```
 
+## 📱 Android SDK Usage
+
+### Quick Start
+
+1. **Add the SDK to your project:**
+
+```kotlin
+// Copy KratosTranslationEngine.kt to your project
+val engine = KratosTranslationEngine(context, deepLApiKey)
+```
+
+2. **Simple translation:**
+
+```kotlin
+val result = engine.translateText("Hello world", "es")
+when (result) {
+    is TranslationResult.Success -> {
+        println("Translated: ${result.text}") // "Hola mundo"
+    }
+    is TranslationResult.Error -> {
+        println("Error: ${result.message}")
+    }
+}
+```
+
+3. **Real-time messaging with typing animation:**
+
+```kotlin
+engine.translateWithTypingAnimation(
+    text = "Thank you for your help!",
+    targetLanguage = "es",
+    onCharacterTyped = { currentText ->
+        messageTextView.text = currentText
+    },
+    onComplete = { finalText ->
+        messageTextView.text = finalText // "¡Gracias por tu ayuda!"
+    }
+)
+```
+
+4. **Batch translation for efficiency:**
+
+```kotlin
+val results = engine.translateBatch(
+    messages = listOf("Hello", "Goodbye", "Thank you"),
+    targetLanguage = "es"
+)
+```
+
+5. **Cache optimization for instant responses:**
+
+```kotlin
+// Pre-populate cache for common messages
+engine.populateCacheForLanguage(
+    targetLanguage = "es",
+    commonMessages = listOf("Welcome", "Thank you", "Please wait...")
+)
+```
+
+### SDK Features
+
+- **33+ Languages Supported** - Full DeepL language coverage
+- **Offline Translation** - Works without internet after cache population
+- **Predictive Caching** - Instant responses for common messages
+- **Auto Language Detection** - Automatically detect source language
+- **Typing Animations** - Smooth character-by-character display
+- **Thread-Safe Operations** - Coroutine-based async processing
+- **Cache Management** - Intelligent cache population and status monitoring
+
 ## 💡 Usage Examples
 
 ### Python Client Example
@@ -341,11 +438,24 @@ The enhanced API uses SQLite with the following tables:
 - `users`: User authentication
 - `subscriptions`: Stripe subscription management
 
-## 📱 Mobile App Integration
+## 📱 Mobile App & SDK Integration
 
-This API is designed to work seamlessly with mobile applications:
+Use our SDK for best performance and seamless integration with your mobile applications. The
+KratosTranslationEngine Android SDK provides instant translations, priority caching, offline
+support, and animated UI experiences out of the box.
 
-### iOS Swift Example
+### Android SDK Integration
+
+- Integrate `KratosTranslationEngine` directly into your app.
+- Get optimal speed with predictive caching and offline mode.
+- Enhance UI with real-time typing animations and instant UI translations.
+- Fallback to server API automatically for uncached or new phrases.
+
+See [Android SDK Usage](#-android-sdk-usage) section above for step-by-step examples.
+
+### iOS Integration (REST API Example)
+
+For iOS, use the REST API as shown below, or contact us for SDK availability.
 
 ```swift
 struct TranslationService {
@@ -360,23 +470,6 @@ struct TranslationService {
     
     func populateCache(for language: String) async throws {
         // Pre-populate cache on app launch
-    }
-}
-```
-
-### Android Kotlin Example
-
-```kotlin
-class TranslationService(private val apiKey: String) {
-    private val baseUrl = "https://your-api-domain.com"
-    
-    suspend fun translate(text: String, target: String): TranslationResponse {
-        // ... implementation
-        return TranslationResponse("Hola", true, true, 0.012)
-    }
-    
-    suspend fun populateCache(targetLang: String) {
-        // Background cache population
     }
 }
 ```
@@ -431,18 +524,31 @@ For support and questions:
 
 ## Roadmap
 
-### Upcoming Features
+### API Service Enhancements
 
 - [x] ~~Multi-language batch processing~~
 - [ ] Cache persistence across server restarts
 - [ ] Simple web dashboard to view translations
 - [ ] Export/import translation cache
 - [ ] API usage statistics and logs
+- [ ] Support for more translation providers (Google Translate, Azure, etc.)
+
+### SDK Development
+
+- [x] ~~Android SDK (KratosTranslationEngine)~~
+- [ ] iOS SDK development
+- [ ] React Native SDK wrapper
+- [ ] Flutter plugin
+- [ ] Unity plugin for game localization
+- [ ] SDK documentation and tutorials
+
+### Platform Features
+
 - [ ] Translation history viewer
 - [ ] Basic admin panel for cache management
 - [ ] Multi-target batch processing (translate to multiple languages at once)
-- [ ] Support for more translation providers (Google Translate, Azure, etc.)
 - [ ] Simple notification system for cache events
+- [ ] SDK analytics and usage tracking
 
 ### Performance Targets
 
