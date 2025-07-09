@@ -49,7 +49,7 @@
     <header class="sticky top-0 z-50 bg-[#0a0a0a] border-b border-gray-800">
       <div class="w-full px-6 py-4">
           <div class="flex items-center justify-between">
-              <a href="./index.html">
+              <a href="{{ url_for('home') }}">
                   <div class="flex items-center">
                       <h1 class="text-2xl ['Poppins','Helvetica','Arial',sans-serif] text-primary">
                         Argonaut DV
@@ -57,21 +57,23 @@
                   </div>
               </a>
               <nav class="hidden md:flex items-center space-x-8">
-                  <a href="./index.html#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
-                  <a href="./privacy-policy.html" class="text-gray-300 hover:text-primary transition-colors">Privacy
+                  <a href="{{ url_for('home') }}#features"
+                     class="text-gray-300 hover:text-primary transition-colors">Features</a>
+                  <a href="{{ url_for('privacy') }}"
+                     class="text-gray-300 hover:text-primary transition-colors">Privacy
                       Policy</a>
-                  <a href="./terms-and-condition.html"
+                  <a href="{{ url_for('terms') }}"
                       class="text-gray-300 hover:text-primary transition-colors">Terms &
                       Conditions</a>
               </nav>
               <div class="flex items-center space-x-4">
-                  <a href="./login.html" class="hidden md:block">
+                  <a href="{{ url_for('login') }}" class="hidden md:block">
                       <button
                           class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
                           Login
                       </button>
                   </a>
-                  <a href="./profile.html"
+                  <a href="{{ url_for('profile') }}"
                       class="hidden md:flex items-center justify-center w-10 h-10 bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors">
                       <i class="ri-user-3-line text-xl"></i>
                   </a>
@@ -94,18 +96,21 @@
               </button>
           </div>
           <div class="flex flex-col space-y-6">
-              <a href="./index.html#features" class="text-gray-300 hover:text-primary transition-colors">Features</a>
-              <a href="./privacy-policy.html" class="text-gray-300 hover:text-primary transition-colors">Privacy
+              <a href="{{ url_for('home') }}#features"
+                 class="text-gray-300 hover:text-primary transition-colors">Features</a>
+              <a href="{{ url_for('privacy') }}"
+                 class="text-gray-300 hover:text-primary transition-colors">Privacy
                   Policy</a>
-              <a href="./terms-and-condition.html" class="text-gray-300 hover:text-primary transition-colors">Terms &
+              <a href="{{ url_for('terms') }}"
+                 class="text-gray-300 hover:text-primary transition-colors">Terms &
                   Conditions</a>
-              <a href="./login.html">
+              <a href="{{ url_for('login') }}">
                   <button
                       class="w-full bg-primary text-white px-6 py-2 !rounded-button hover:bg-secondary transition-colors whitespace-nowrap">
                       Login
                   </button>
               </a>
-              <a href="./profile.html"
+              <a href="{{ url_for('profile') }}"
                   class="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors">
                   <i class="ri-user-3-line"></i>
                   <span>Profile</span>
