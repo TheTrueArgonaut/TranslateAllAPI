@@ -224,11 +224,22 @@
             </form>
 
               <!-- Flash messages for login -->
-              {% with messages = get_flashed_messages() %}
+              {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
-              {% for message in messages %}
-              <div class="bg-red-100/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mt-4">
+              {% for category, message in messages %}
+              <div class="px-4 py-3 rounded-lg mt-4 {% if category == 'success' %}bg-green-100/10 border border-green-500/20 text-green-400{% elif category == 'warning' %}bg-yellow-100/10 border border-yellow-500/20 text-yellow-400{% else %}bg-red-100/10 border border-red-500/20 text-red-400{% endif %}">
                   {{ message }}
+                  {% if category == 'warning' and 'verify your email' in message %}
+                  <div class="mt-2">
+                      <button
+                              onclick="resendVerification()"
+                              class="text-primary hover:text-red-400 underline text-sm"
+                              id="resendBtn"
+                      >
+                          Resend verification email
+                      </button>
+                  </div>
+                  {% endif %}
             </div>
               {% endfor %}
               {% endif %}
@@ -558,6 +569,44 @@
                 });
             });
         });
+    </script>
+    <script>
+        function resendVerification() {
+          const email = document.querySelector('#loginFormElement input[name="email"]').value;
+          const button = document.getElementById('resendBtn');
+          
+          if (!email) {
+            alert('Please enter your email address first');
+            return;
+          }
+          
+          button.disabled = true;
+          button.textContent = 'Sending...';
+          
+          fetch('/resend-verification', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Verification email sent! Please check your inbox.');
+            } else {
+              alert('Error: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to send verification email. Please try again.');
+          })
+          .finally(() => {
+            button.disabled = false;
+            button.textContent = 'Resend verification email';
+          });
+        }
     </script>
   </body>
 </html>

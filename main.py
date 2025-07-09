@@ -503,6 +503,9 @@ def init_db():
                     full_name TEXT,
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
+                    email_verified INTEGER DEFAULT 0,
+                    verification_token TEXT,
+                    verification_token_expires TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                   )''')
     
@@ -578,16 +581,22 @@ def login():
         password = request.form.get('password', '')
         conn = sqlite3.connect('api_keys.db')
         c = conn.cursor()
-        c.execute('SELECT id, password_hash FROM users WHERE email = ?', (email,))
+        c.execute('SELECT id, password_hash, email_verified FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         conn.close()
+        
         if row and check_password_hash(row[1], password):
-            session['user_id'] = row[0]
-            session['user_email'] = email
-            flash('Logged in successfully.', 'success')
-            return redirect(url_for('profile'))
-        flash('Invalid email or password.')
-        return redirect(url_for('login'))
+            if row[2] == 1:  # email_verified
+                session['user_id'] = row[0]
+                session['user_email'] = email
+                flash('Logged in successfully.', 'success')
+                return redirect(url_for('profile'))
+            else:
+                flash('Please verify your email before logging in. Check your inbox for the verification link.', 'warning')
+                return redirect(url_for('login'))
+        else:
+            flash('Invalid email or password.', 'error')
+            return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/profile')
@@ -598,10 +607,14 @@ def profile():
         flash('Please log in to access your profile.', 'warning')
         return redirect(url_for('login'))
     
-    # For now, since there are no active subscriptions, always show inactive status
-    # This will be updated when Stripe webhook creates subscriptions
+    # Check if user's email is verified
     conn = sqlite3.connect('api_keys.db')
     c = conn.cursor()
+    c.execute('SELECT email_verified FROM users WHERE id = ?', (user_id,))
+    row = c.fetchone()
+    if not row or row[0] != 1:
+        flash('Please verify your email before accessing your profile.', 'warning')
+        return redirect(url_for('login'))
     
     # Check if user has any active subscriptions
     c.execute('SELECT COUNT(*) FROM subscriptions WHERE user_id = ? AND status = "active"', (user_id,))
@@ -662,21 +675,92 @@ def register():
             flash('You must agree to the Terms of Service and Privacy Policy.')
             return redirect(url_for('register'))
         
+        verification_token = uuid.uuid4().hex
+        verification_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
         pw_hash = generate_password_hash(password)
+        
         try:
             conn = sqlite3.connect('api_keys.db')
             c = conn.cursor()
-            c.execute('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)', (full_name, email, pw_hash))
+            c.execute('INSERT INTO users (full_name, email, password_hash, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?)', (full_name, email, pw_hash, verification_token, verification_token_expires))
             conn.commit()
-            session['user_id'] = c.lastrowid
-            session['user_email'] = email
-            flash('Registration successful. You are now logged in.', 'success')
-            return redirect(url_for('profile'))
+            user_id = c.lastrowid
+            conn.close()
+            
+            # Send verification email
+            verification_url = f"{request.host_url.rstrip('/')}/verify-email?token={verification_token}"
+            
+            try:
+                if ses_client:
+                    ses_client.send_email(
+                        Source=os.getenv('SES_EMAIL', 'noreply@argonautdigitalventures.com'),
+                        Destination={'ToAddresses': [email]},
+                        Message={
+                            'Subject': {'Data': 'Verify Your Email - Argonaut Digital Ventures'},
+                            'Body': {
+                                'Html': {
+                                    'Data': f'''
+                                    <html>
+                                    <head>
+                                        <style>
+                                            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                                            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                                            .header {{ background: #dc2626; color: white; padding: 20px; text-align: center; }}
+                                            .content {{ background: #f8f9fa; padding: 30px; }}
+                                            .button {{ display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; }}
+                                            .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class="container">
+                                            <div class="header">
+                                                <h1>Welcome to Argonaut Digital Ventures!</h1>
+                                            </div>
+                                            <div class="content">
+                                                <h2>Hi {full_name or 'there'}!</h2>
+                                                <p>Thank you for registering with our TranslateAll API platform. To complete your registration and access your account, please verify your email address.</p>
+                                                <p style="text-align: center; margin: 30px 0;">
+                                                    <a href="{verification_url}" class="button">Verify Your Email</a>
+                                                </p>
+                                                <p>Or copy and paste this link into your browser:</p>
+                                                <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                                                <p><strong>This link will expire in 30 minutes.</strong></p>
+                                                <p>If you didn't create this account, please ignore this email.</p>
+                                            </div>
+                                            <div class="footer">
+                                                <p> 2025 Argonaut Digital Ventures. All rights reserved.</p>
+                                            </div>
+                                        </div>
+                                    </body>
+                                    </html>
+                                    '''
+                                }
+                            }
+                        }
+                    )
+                    flash('Registration successful! Please check your email and click the verification link to complete your account setup.', 'success')
+                else:
+                    # If SES is not configured, auto-verify for development
+                    conn = sqlite3.connect('api_keys.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE users SET email_verified = 1 WHERE id = ?', (user_id,))
+                    conn.commit()
+                    conn.close()
+                    session['user_id'] = user_id
+                    session['user_email'] = email
+                    flash('Registration successful! (Email verification skipped in development mode)', 'success')
+                    return redirect(url_for('profile'))
+                    
+            except ClientError as e:
+                print(f"SES send failed: {e}")
+                flash('Registration successful, but we had trouble sending the verification email. Please contact support.', 'warning')
+            
+            return redirect(url_for('login'))
+            
         except sqlite3.IntegrityError:
             flash('Email already registered.')
             return redirect(url_for('register'))
-        finally:
-            conn.close()
+        
     return render_template('register.html')
 
 @app.route('/health')
@@ -699,6 +783,16 @@ def create_checkout_session():
     user_id = session.get('user_id')
     if not user_id:
         return jsonify(error='Authentication required'), 401
+    
+    # Check if user's email is verified
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    c.execute('SELECT email_verified FROM users WHERE id = ?', (user_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row or row[0] != 1:
+        return jsonify(error='Please verify your email before making a purchase'), 403
     
     user_email = session.get('user_email')
     api_key = session.get('api_key')
@@ -988,6 +1082,125 @@ def demo_translate():
         
     except Exception as e:
         return jsonify(success=False, error=f'Translation error: {str(e)}'), 500
+
+@app.route('/verify-email', methods=['GET'])
+def verify_email():
+    token = request.args.get('token')
+    if not token:
+        flash('Invalid verification link.')
+        return redirect(url_for('login'))
+    
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    c.execute('SELECT id, verification_token_expires FROM users WHERE verification_token = ?', (token,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('Invalid verification link.')
+        return redirect(url_for('login'))
+    
+    user_id, expires_at = row
+    if expires_at < datetime.now(timezone.utc):
+        flash('Verification link has expired.')
+        return redirect(url_for('login'))
+    
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    c.execute('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    
+    flash('Email verified successfully! You can now log in.', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    data = request.get_json() or {}
+    email = data.get('email', '').lower().strip()
+    
+    if not email:
+        return jsonify(success=False, error='Email is required')
+    
+    conn = sqlite3.connect('api_keys.db')
+    c = conn.cursor()
+    c.execute('SELECT id, full_name, email_verified FROM users WHERE email = ?', (email,))
+    row = c.fetchone()
+    
+    if not row:
+        return jsonify(success=False, error='Email not found')
+    
+    user_id, full_name, email_verified = row
+    
+    if email_verified == 1:
+        return jsonify(success=False, error='Email is already verified')
+    
+    # Generate new verification token
+    verification_token = uuid.uuid4().hex
+    verification_token_expires = datetime.now(timezone.utc) + timedelta(minutes=30)
+    
+    c.execute('UPDATE users SET verification_token = ?, verification_token_expires = ? WHERE id = ?', 
+              (verification_token, verification_token_expires, user_id))
+    conn.commit()
+    conn.close()
+    
+    # Send verification email
+    verification_url = f"{request.host_url.rstrip('/')}/verify-email?token={verification_token}"
+    
+    try:
+        if ses_client:
+            ses_client.send_email(
+                Source=os.getenv('SES_EMAIL', 'noreply@argonautdigitalventures.com'),
+                Destination={'ToAddresses': [email]},
+                Message={
+                    'Subject': {'Data': 'Verify Your Email - Argonaut Digital Ventures'},
+                    'Body': {
+                        'Html': {
+                            'Data': f'''
+                            <html>
+                            <head>
+                                <style>
+                                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                                    .header {{ background: #dc2626; color: white; padding: 20px; text-align: center; }}
+                                    .content {{ background: #f8f9fa; padding: 30px; }}
+                                    .button {{ display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; }}
+                                    .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="header">
+                                        <h1>Email Verification</h1>
+                                    </div>
+                                    <div class="content">
+                                        <h2>Hi {full_name or 'there'}!</h2>
+                                        <p>Here's your new verification link to complete your registration:</p>
+                                        <p style="text-align: center; margin: 30px 0;">
+                                            <a href="{verification_url}" class="button">Verify Your Email</a>
+                                        </p>
+                                        <p>Or copy and paste this link into your browser:</p>
+                                        <p style="word-break: break-all; color: #666;">{verification_url}</p>
+                                        <p><strong>This link will expire in 30 minutes.</strong></p>
+                                    </div>
+                                    <div class="footer">
+                                        <p> 2025 Argonaut Digital Ventures. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                            '''
+                        }
+                    }
+                }
+            )
+            return jsonify(success=True, message='Verification email sent successfully')
+        else:
+            return jsonify(success=False, error='Email service not configured')
+            
+    except ClientError as e:
+        print(f"SES send failed: {e}")
+        return jsonify(success=False, error='Failed to send verification email')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)), debug=True)
